@@ -66,6 +66,6 @@ int main(int argc, char** argv) {
     }
 
     image.flip_vertically();
-    image.write_tga_file("output.tga");
+    image.write_tga_file("../image/african_head_line.tga");
     return 0;
 }
