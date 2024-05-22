@@ -1,5 +1,9 @@
-#ifndef __IMAGE_H__
-#define __IMAGE_H__
+//
+// Created by wzh56 on 2024/5/22.
+//
+
+#ifndef GRAPHICS_TINYRENDERER_TGAIMAGE_H
+#define GRAPHICS_TINYRENDERER_TGAIMAGE_H
 
 #include <fstream>
 
@@ -93,4 +97,4 @@ public:
     void clear();
 };
 
-#endif //__IMAGE_H__
+#endif //GRAPHICS_TINYRENDERER_TGAIMAGE_H
