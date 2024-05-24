@@ -6,8 +6,8 @@ const TGAColor red =    TGAColor(255,   0,      0,      255);
 const TGAColor green =  TGAColor(0,     255,    0,      255);
 
 Model *model = nullptr;
-const int width  = 200;
-const int height = 200;
+const int width  = 800;
+const int height = 800;
 
 // Bresenham's line algorithm
 void line(Vec2i p0, Vec2i p1, TGAImage &image, const TGAColor& color) {
@@ -49,23 +49,8 @@ void line(Vec2i p0, Vec2i p1, TGAImage &image, const TGAColor& color) {
     }
 }
 
-// get barycentric
-Vec3f barycentric(Vec2i *pts, Vec2i P) {
-    Vec3i x(pts[1].x - pts[0].x, pts[2].x - pts[0].x, pts[0].x - P.x);
-    Vec3i y(pts[1].y - pts[0].y, pts[2].y - pts[0].y, pts[0].y - P.y);
-    Vec3i u = x ^ y;
-
-    // u.z is Int, so "abs(u.z) < 1" means "u.z == 0"
-    // if u.z is 0, then triangle is degenerate
-    if (std::abs(u.z) < 1) return {-1, 1, 1};
-
-    return {1.0f - (float)(u.x + u.y) / (float)u.z,
-            (float)u.x / (float)u.z,
-            (float)u.y / (float)u.z};
-}
-
 // line sweeping triangle drawing
-void triangle(Vec2i p0, Vec2i p1, Vec2i p2, TGAImage &image, const TGAColor& color) {
+void triangle_line_sweeping(Vec2i p0, Vec2i p1, Vec2i p2, TGAImage &image, const TGAColor& color) {
     if (p0.y == p1.y && p1.y == p2.y) return;
     // make p0.y < p1.y < p2.y
     if (p0.y > p1.y) std::swap(p0, p1);
@@ -87,22 +72,131 @@ void triangle(Vec2i p0, Vec2i p1, Vec2i p2, TGAImage &image, const TGAColor& col
     }
 }
 
+// get barycentric
+Vec3f barycentric(Vec2i *pts, const Vec2i& P) {
+    Vec3i x(pts[1].x - pts[0].x, pts[2].x - pts[0].x, pts[0].x - P.x);
+    Vec3i y(pts[1].y - pts[0].y, pts[2].y - pts[0].y, pts[0].y - P.y);
+    Vec3i u = x ^ y;
+
+    // u.z is Int, so "abs(u.z) < 1" means "u.z == 0"
+    // if u.z is 0, then triangle is degenerate
+    if (std::abs(u.z) < 1) return {-1, 1, 1};
+
+    return {1.0f - (float)(u.x + u.y) / (float)u.z,
+            (float)u.x / (float)u.z,
+            (float)u.y / (float)u.z};
+}
+
+bool inside_triangle_cross_product(Vec2i *pts, const Vec2i& P) {
+    Vec2i AB(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+    Vec2i BC(pts[2].x - pts[1].x, pts[2].y - pts[1].y);
+    Vec2i CA(pts[0].x - pts[2].x, pts[0].y - pts[2].y);
+
+    Vec2i AP(P.x - pts[0].x, P.y - pts[0].y);
+    Vec2i BP(P.x - pts[1].x, P.y - pts[1].y);
+    Vec2i CP(P.x - pts[2].x, P.y - pts[2].y);
+
+    int z1 = AB ^ AP;
+    int z2 = BC ^ BP;
+    int z3 = CA ^ CP;
+
+    return (z1 > 0 && z2 > 0 && z3 > 0) || (z1 < 0 && z2 < 0 && z3 < 0);
+}
+
+// triangle drawing with barycentric
+void triangle_barycentric(Vec2i *pts, TGAImage &image, const TGAColor& color) {
+    // create bounding box
+    Vec2i bbox_min(image.get_width() - 1, image.get_height() - 1);
+    Vec2i bbox_max(0, 0);
+    Vec2i clamp_min(0, 0);
+    Vec2i clamp_max(image.get_width() - 1, image.get_height() - 1);
+    for (int i = 0; i < 3; ++i) {
+        bbox_min.x = std::max(clamp_min.x, std::min(bbox_min.x, pts[i].x));
+        bbox_min.y = std::max(clamp_min.y, std::min(bbox_min.y, pts[i].y));
+
+        bbox_max.x = std::min(clamp_max.x, std::max(bbox_max.x, pts[i].x));
+        bbox_max.y = std::min(clamp_max.y, std::max(bbox_max.y, pts[i].y));
+    }
+
+    Vec2i P;
+    for (P.x = bbox_min.x; P.x <= bbox_max.x; ++P.x) {
+        for (P.y = bbox_min.y; P.y <= bbox_max.y ; ++P.y) {
+            Vec3f bc = barycentric(pts, P);
+            if (bc.x < 0 || bc.y < 0 || bc.z < 0) continue;
+            image.set(P.x, P.y, color);
+        }
+    }
+}
+
+// triangle drawing with cross product
+void triangle_cross_product(Vec2i *pts, TGAImage &image, const TGAColor& color) {
+    // create bounding box
+    Vec2i bbox_min(image.get_width() - 1, image.get_height() - 1);
+    Vec2i bbox_max(0, 0);
+    Vec2i clamp_min(0, 0);
+    Vec2i clamp_max(image.get_width() - 1, image.get_height() - 1);
+    for (int i = 0; i < 3; ++i) {
+        bbox_min.x = std::max(clamp_min.x, std::min(bbox_min.x, pts[i].x));
+        bbox_min.y = std::max(clamp_min.y, std::min(bbox_min.y, pts[i].y));
+
+        bbox_max.x = std::min(clamp_max.x, std::max(bbox_max.x, pts[i].x));
+        bbox_max.y = std::min(clamp_max.y, std::max(bbox_max.y, pts[i].y));
+    }
+
+    Vec2i P;
+    for (P.x = bbox_min.x; P.x <= bbox_max.x; ++P.x) {
+        for (P.y = bbox_min.y; P.y <= bbox_max.y ; ++P.y) {
+            if (!inside_triangle_cross_product(pts, P)) continue;
+            image.set(P.x, P.y, color);
+        }
+    }
+}
+
+
 int main(int argc, char** argv) {
-//    if (argc == 2) {
-//        model = new Model(argv[1]);
-//    } else {
-//        model = new Model("../obj/african_head.obj");
-//    }
+    if (argc == 2) {
+        model = new Model(argv[1]);
+    } else {
+        model = new Model("../obj/african_head.obj");
+    }
 
     TGAImage image(width, height, TGAImage::RGB);
-    Vec2i t0[3] = {Vec2i(10, 70),   Vec2i(50, 160),  Vec2i(70, 80)};
-    Vec2i t1[3] = {Vec2i(180, 50),  Vec2i(150, 1),   Vec2i(70, 180)};
-    Vec2i t2[3] = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
-    triangle(t0[0], t0[1], t0[2], image, red);
-    triangle(t1[0], t1[1], t1[2], image, white);
-    triangle(t2[0], t2[1], t2[2], image, green);
+
+//    // Random Shading
+//    for (int i = 0; i < model->nfaces(); ++i) {
+//        std::vector<int> face = model->face(i);
+//        Vec2i screen_coords[3];
+//        for (int j = 0; j < 3; ++j) {
+//            Vec3f word_coord = model->vert(face[j]);
+//            screen_coords[j] = Vec2i((int)((word_coord.x + 1.0f) * width / 2.0f), (int)((word_coord.y + 1.0f) * height / 2.0f));
+//        }
+//        triangle_barycentric(screen_coords, image, TGAColor(rand() % 255, rand() % 255, rand() % 255, 255));
+//    }
+
+    Vec3f light_dir(0, 0, -1);
+
+    for (int i = 0; i < model->nfaces(); ++i) {
+        // load face
+        std::vector<int> face = model->face(i);
+        Vec2i screen_coords[3];
+        Vec3f world_coords[3];
+        for (int j = 0; j < 3; ++j) {
+            // load vert and project to screen
+            Vec3f vert = model->vert(face[j]);
+            world_coords[j] = vert;
+            screen_coords[j] = Vec2i((int)((vert.x + 1.0f) * width / 2.0f), (int)((vert.y + 1.0f) * height / 2.0f));
+        }
+        // calculate normal of face
+        Vec3f normal = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
+        normal.normalize();
+
+        float intensity = normal * light_dir;
+        if (intensity > 0)
+            triangle_barycentric(screen_coords, image, TGAColor(intensity * 255, intensity * 255, intensity * 255, 255));
+    }
 
     image.flip_vertically();
-    image.write_tga_file("../image/output.tga");
+    //image.write_tga_file("../image/output.tga");
+    image.write_tga_file("../image/african_head_simple_light_shading.tga");
     return 0;
 }

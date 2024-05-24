@@ -15,8 +15,8 @@ private:
 public:
     Model(const char *filename);
     ~Model();
-    int vertsSize();
-    int facesSize();
+    int nverts();
+    int nfaces();
     Vec3f vert(int idx);
     std::vector<int> face(int idx);
 };

@@ -18,9 +18,11 @@ template <class T> struct Vec2 {
     Vec2() : u(0), v(0) { }
     Vec2(T _u, T _v) : u(_u), v(_v) { }
 
+    inline T       operator ^(const Vec2<T> &V) const { return x * V.y - y * V.x;}
     inline Vec2<T> operator +(const Vec2<T> &V) const { return Vec2<T>(u + V.u, v + V.v); }
     inline Vec2<T> operator -(const Vec2<T> &V) const { return Vec2<T>(u - V.u, v - V.v); }
     inline Vec2<T> operator *(float f)          const { return Vec2<T>(u * f, v * f); }
+    inline T operator *(const Vec2<T> &V)       const { return x * V.x + y * V.y;}
     template <class > friend std::ostream& operator<<(std::ostream& s, Vec2<T>& v);
 };
 

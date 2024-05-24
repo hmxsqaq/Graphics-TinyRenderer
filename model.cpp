@@ -19,7 +19,7 @@ Model::Model(const char *filename) : verts_(), faces_() {
     std::string line;
     while (!in.eof()) {
         std::getline(in, line);
-        std::istringstream iss(line.c_str());
+        std::istringstream iss(line);
         char trash;
         if (!line.compare(0, 2, "v ")) {
             iss >> trash;
@@ -43,11 +43,11 @@ Model::Model(const char *filename) : verts_(), faces_() {
 
 Model::~Model() { }
 
-int Model::vertsSize() {
+int Model::nverts() {
     return (int)verts_.size();
 }
 
-int Model::facesSize() {
+int Model::nfaces() {
     return (int)faces_.size();
 }
 

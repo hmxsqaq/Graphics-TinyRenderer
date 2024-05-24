@@ -113,3 +113,105 @@ Vec3f barycentric(Vec2i *pts, Vec2i P) {
 ```
 
 - Cross Product
+
+We can also use cross product to check a point. Just take the cross product of each side of the triangle with the line connecting each vertex to the given point. 
+
+If the results all have the same sign, then the point is inside the triangle.
+
+```c++
+bool inside_triangle_cross_product(Vec2i *pts, const Vec2i& P) {
+    Vec2i AB(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+    Vec2i BC(pts[2].x - pts[1].x, pts[2].y - pts[1].y);
+    Vec2i CA(pts[0].x - pts[2].x, pts[0].y - pts[2].y);
+
+    Vec2i AP(P.x - pts[0].x, P.y - pts[0].y);
+    Vec2i BP(P.x - pts[1].x, P.y - pts[1].y);
+    Vec2i CP(P.x - pts[2].x, P.y - pts[2].y);
+
+    int z1 = AB ^ AP;
+    int z2 = BC ^ BP;
+    int z3 = CA ^ CP;
+
+    return (z1 > 0 && z2 > 0 && z3 > 0) || (z1 < 0 && z2 < 0 && z3 < 0);
+}
+```
+
+- Draw
+
+Then, we can draw the triangle.
+
+```c++
+// triangle drawing with barycentric
+void triangle_barycentric(Vec2i *pts, TGAImage &image, const TGAColor& color) {
+    // create bounding box
+    Vec2i bbox_min(image.get_width() - 1, image.get_height() - 1);
+    Vec2i bbox_max(0, 0);
+    Vec2i clamp_min(0, 0);
+    Vec2i clamp_max(image.get_width() - 1, image.get_height() - 1);
+    for (int i = 0; i < 3; ++i) {
+        bbox_min.x = std::max(clamp_min.x, std::min(bbox_min.x, pts[i].x));
+        bbox_min.y = std::max(clamp_min.y, std::min(bbox_min.y, pts[i].y));
+
+        bbox_max.x = std::min(clamp_max.x, std::max(bbox_max.x, pts[i].x));
+        bbox_max.y = std::min(clamp_max.y, std::max(bbox_max.y, pts[i].y));
+    }
+
+    Vec2i P;
+    for (P.x = bbox_min.x; P.x <= bbox_max.x; ++P.x) {
+        for (P.y = bbox_min.y; P.y <= bbox_max.y ; ++P.y) {
+            Vec3f bc = barycentric(pts, P);
+            if (bc.x < 0 || bc.y < 0 || bc.z < 0) continue;
+            image.set(P.x, P.y, color);
+        }
+    }
+}
+```
+
+*In this case, I use barycentric to check the point. If you want to use cross product, you just need to change the last if*
+
+## Shading
+
+- Random Shading
+
+Just all random.
+
+```c++
+// Random Shading
+for (int i = 0; i < model->nfaces(); ++i) {
+    std::vector<int> face = model->face(i);
+    Vec2i screen_coords[3];
+    for (int j = 0; j < 3; ++j) {
+        Vec3f word_coord = model->vert(face[j]);
+        screen_coords[j] = Vec2i((int)((word_coord.x + 1.0f) * width / 2.0f), (int)((word_coord.y + 1.0f) * height / 2.0f));
+    }
+    triangle_barycentric(screen_coords, image, TGAColor(rand() % 255, rand() % 255, rand() % 255, 255));
+}
+```
+
+- Simple Light Shading
+
+We assume that the intensity of illumination is equal to the scalar product of the light vector and the normal to the given triangle. The normal to the triangle can be calculated simply as the cross product of its two sides.
+
+```c++
+Vec3f light_dir(0, 0, -1);
+
+for (int i = 0; i < model->nfaces(); ++i) {
+    // load face
+    std::vector<int> face = model->face(i);
+    Vec2i screen_coords[3];
+    Vec3f world_coords[3];
+    for (int j = 0; j < 3; ++j) {
+        // load vert and project to screen
+        Vec3f vert = model->vert(face[j]);
+        world_coords[j] = vert;
+        screen_coords[j] = Vec2i((int)((vert.x + 1.0f) * width / 2.0f), (int)((vert.y + 1.0f) * height / 2.0f));
+    }
+    // calculate normal of face
+    Vec3f normal = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
+    normal.normalize();
+
+    float intensity = normal * light_dir;
+    if (intensity > 0)
+        triangle_barycentric(screen_coords, image, TGAColor(intensity * 255, intensity * 255, intensity * 255, 255));
+}
+```
