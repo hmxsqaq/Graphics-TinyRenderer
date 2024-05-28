@@ -1,100 +1,61 @@
-//
-// Created by wzh56 on 2024/5/22.
-//
-
 #ifndef GRAPHICS_TINYRENDERER_TGAIMAGE_H
 #define GRAPHICS_TINYRENDERER_TGAIMAGE_H
 
+#include <cstdint>
 #include <fstream>
+#include <vector>
 
-#pragma pack(push,1)
-struct TGA_Header {
-    char idlength;
-    char colormaptype;
-    char datatypecode;
-    short colormaporigin;
-    short colormaplength;
-    char colormapdepth;
-    short x_origin;
-    short y_origin;
-    short width;
-    short height;
-    char  bitsperpixel;
-    char  imagedescriptor;
+// standard TGA header
+#pragma pack(push, 1)
+struct TGAHeader {
+    std::uint8_t  id_length = 0;
+    std::uint8_t  color_map_type = 0;
+    std::uint8_t  data_type_code = 0;
+    std::uint16_t color_map_origin = 0;
+    std::uint16_t color_map_length = 0;
+    std::uint8_t  color_map_depth = 0;
+    std::uint16_t x_origin = 0;
+    std::uint16_t y_origin = 0;
+    std::uint16_t width = 0;
+    std::uint16_t height = 0;
+    std::uint8_t  bits_per_pixel = 0;
+    std::uint8_t  image_descriptor = 0;
 };
 #pragma pack(pop)
 
-
-
 struct TGAColor {
-    union {
-        struct {
-            unsigned char b, g, r, a;
-        };
-        unsigned char raw[4];
-        unsigned int val;
-    };
-    int bytespp;
-
-    TGAColor() : val(0), bytespp(1) {
-    }
-
-    TGAColor(unsigned char R, unsigned char G, unsigned char B, unsigned char A) : b(B), g(G), r(R), a(A), bytespp(4) {
-    }
-
-    TGAColor(int v, int bpp) : val(v), bytespp(bpp) {
-    }
-
-    TGAColor(const TGAColor &c) : val(c.val), bytespp(c.bytespp) {
-    }
-
-    TGAColor(const unsigned char *p, int bpp) : val(0), bytespp(bpp) {
-        for (int i=0; i<bpp; i++) {
-            raw[i] = p[i];
-        }
-    }
-
-    TGAColor & operator =(const TGAColor &c) {
-        if (this != &c) {
-            bytespp = c.bytespp;
-            val = c.val;
-        }
-        return *this;
-    }
+    std::uint8_t bgra[4] = {0,0,0,0}; // blue, green, red, alpha
+    std::uint8_t bytespp = 4; // number of bytes per pixel, 3 for RGB, 4 for RGBA
+    std::uint8_t& operator[](const int i) { return bgra[i]; }
 };
 
-
 class TGAImage {
-protected:
-    unsigned char* data;
-    int width;
-    int height;
-    int bytespp;
-
-    bool   load_rle_data(std::ifstream &in);
-    bool unload_rle_data(std::ofstream &out);
 public:
-    enum Format {
-        GRAYSCALE=1, RGB=3, RGBA=4
-    };
+    // TGAImage color formats
+    enum Format { GRAYSCALE = 1, RGB = 3, RGBA = 4 };
 
-    TGAImage();
-    TGAImage(int w, int h, int bpp);
-    TGAImage(const TGAImage &img);
-    bool read_tga_file(const char *filename);
-    bool write_tga_file(const char *filename, bool rle=true);
-    bool flip_horizontally();
-    bool flip_vertically();
-    bool scale(int w, int h);
-    TGAColor get(int x, int y);
-    bool set(int x, int y, TGAColor c);
-    ~TGAImage();
-    TGAImage & operator =(const TGAImage &img);
-    int get_width();
-    int get_height();
-    int get_bytespp();
-    unsigned char *buffer();
-    void clear();
+    TGAImage() = default;
+    TGAImage(int width, int height, int bits_per_pixel);
+
+    bool read_tga_file(const std::string& filename);
+    bool write_tga_file(const std::string& filename, bool v_flip = true, bool rle = true) const;
+
+    void flip_horizontally();
+    void flip_vertically();
+
+    TGAColor get_pixel(int x, int y) const;
+    void set_pixel(int x, int y, const TGAColor &color);
+
+    int width() const { return width_; };
+    int height() const { return height_;};
+private:
+    bool load_rle_data(std::ifstream &in);
+    bool unload_rle_data(std::ofstream &out) const;
+
+    int width_ = 0;
+    int height_ = 0;
+    std::uint8_t bpp_ = 0; // bits per pixel
+    std::vector<std::uint8_t> data_ = {};
 };
 
 #endif //GRAPHICS_TINYRENDERER_TGAIMAGE_H

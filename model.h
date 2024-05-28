@@ -9,16 +9,18 @@
 #include "geometry.h"
 
 class Model {
+public:
+    explicit Model(const char *filename);
+    ~Model();
+    Vec3f vert(int idx);
+    std::vector<int> face(int idx);
+
+    int n_verts() const;
+    int n_faces() const;
+
 private:
     std::vector<Vec3f> verts_;
     std::vector<std::vector<int>> faces_;
-public:
-    Model(const char *filename);
-    ~Model();
-    int nverts();
-    int nfaces();
-    Vec3f vert(int idx);
-    std::vector<int> face(int idx);
 };
 
 

@@ -1,7 +1,3 @@
-//
-// Created by wzh56 on 2024/5/22.
-//
-
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -43,18 +39,18 @@ Model::Model(const char *filename) : verts_(), faces_() {
 
 Model::~Model() { }
 
-int Model::nverts() {
-    return (int)verts_.size();
-}
-
-int Model::nfaces() {
-    return (int)faces_.size();
-}
-
 Vec3f Model::vert(int idx) {
     return verts_[idx];
 }
 
 std::vector<int> Model::face(int idx) {
     return faces_[idx];
+}
+
+int Model::n_verts() const {
+    return static_cast<int>(verts_.size());
+}
+
+int Model::n_faces() const {
+    return static_cast<int>(faces_.size());
 }

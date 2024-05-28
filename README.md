@@ -177,7 +177,7 @@ Just all random.
 
 ```c++
 // Random Shading
-for (int i = 0; i < model->nfaces(); ++i) {
+for (int i = 0; i < model->n_faces(); ++i) {
     std::vector<int> face = model->face(i);
     Vec2i screen_coords[3];
     for (int j = 0; j < 3; ++j) {
@@ -195,7 +195,7 @@ We assume that the intensity of illumination is equal to the scalar product of t
 ```c++
 Vec3f light_dir(0, 0, -1);
 
-for (int i = 0; i < model->nfaces(); ++i) {
+for (int i = 0; i < model->n_faces(); ++i) {
     // load face
     std::vector<int> face = model->face(i);
     Vec2i screen_coords[3];

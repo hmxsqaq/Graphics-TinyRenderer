@@ -1,7 +1,3 @@
-//
-// Created by wzh56 on 2024/5/22.
-//
-
 #ifndef GRAPHICS_TINYRENDERER_GEOMETRY_H
 #define GRAPHICS_TINYRENDERER_GEOMETRY_H
 
