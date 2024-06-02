@@ -8,4 +8,7 @@ add_executable(Graphics_TinyRenderer main.cpp
         model.h
         tgaimage.cpp
         tgaimage.h
-        geometry.h)
+        geometry.h
+        geometry.cpp
+        renderer.cpp
+        renderer.h)

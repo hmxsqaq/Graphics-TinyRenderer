@@ -1,17 +1,11 @@
 #include <iostream>
-#include <string>
-#include <fstream>
 #include <sstream>
-#include <vector>
 #include "model.h"
 
-Model::Model(const char *filename) : verts_(), faces_() {
+Model::Model(const std::string& filename) {
     std::ifstream in;
     in.open(filename, std::ifstream::in);
-    if (in.fail()) {
-        std::cerr << "Failed to open file: " << filename << std::endl;
-        return;
-    }
+    if (in.fail()) return;
     std::string line;
     while (!in.eof()) {
         std::getline(in, line);
@@ -19,38 +13,44 @@ Model::Model(const char *filename) : verts_(), faces_() {
         char trash;
         if (!line.compare(0, 2, "v ")) {
             iss >> trash;
-            Vec3f vert;
-            for (float & i : vert.raw)
-                iss >> i;
+            Vec3 vert;
+            for (int i = 0; i < 3; i++) iss >> vert[i];
             verts_.push_back(vert);
-        } else if (!line.compare(0, 2, "f ")) {
-            std::vector<int> face;
-            int itrash, index;
+        } else if (!line.compare(0, 3, "vt ")) {
+            iss >> trash >> trash;
+            Vec2 uv;
+            for (int i = 0; i < 2; i++) iss >> uv[i];
+            tex_coord_.push_back({uv.x, 1 - uv.y});
+        } else if (!line.compare(0, 3, "vn ")) {
+            iss >> trash >> trash;
+            Vec3 norm;
+            for (int i = 0; i < 3; i++) iss >> norm[i];
+            norms_.push_back(norm.normalize());
+        }  else if (!line.compare(0, 2, "f ")) {
+            int f, t, n;
             iss >> trash;
-            while (iss >> index >> trash >> itrash >> trash >> itrash) {
-                index--;
-                face.push_back(index);
+            int counter = 0;
+            while (iss >> f >> trash >> t >> trash >> n) {
+                facet_vrt_.push_back(--f);
+                facet_tex_.push_back(--t);
+                facet_nrm_.push_back(--n);
+                counter++;
             }
-            faces_.push_back(face);
+            if (counter != 3) {
+                std::cerr << "Error: the obj file is supposed to be triangulated" << std::endl;
+                return;
+            }
         }
     }
-    std::cerr << "# v# " << verts_.size() << " f# "  << faces_.size() << std::endl;
+    std::cout << "# v# " << n_verts() << " f# "  << n_faces() << " vt# " << tex_coord_.size() << " vn# " << norms_.size() << std::endl;
+    load_texture(filename, "_diffuse.tga",    diffuse_map_ );
+    load_texture(filename, "_nm_tangent.tga", normal_map_);
+    load_texture(filename, "_spec.tga",       specular_map_);
 }
 
-Model::~Model() { }
-
-Vec3f Model::vert(int idx) {
-    return verts_[idx];
-}
-
-std::vector<int> Model::face(int idx) {
-    return faces_[idx];
-}
-
-int Model::n_verts() const {
-    return static_cast<int>(verts_.size());
-}
-
-int Model::n_faces() const {
-    return static_cast<int>(faces_.size());
+void Model::load_texture(const std::string& filename, const std::string& suffix, TGAImage &img) {
+    size_t dot = filename.find_last_of('.');
+    if (dot == std::string::npos) return;
+    std::string tex_file = filename.substr(0, dot) + suffix;
+    std::cout << "texture file " << tex_file << " loading " << (img.read_tga_file(tex_file) ? "ok" : "failed") << std::endl;
 }

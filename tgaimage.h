@@ -23,7 +23,7 @@ struct TGAHeader {
 };
 #pragma pack(pop)
 
-struct TGAColor {
+struct Color {
     std::uint8_t bgra[4] = {0,0,0,0}; // blue, green, red, alpha
     std::uint8_t bytespp = 4; // number of bytes per pixel, 3 for RGB, 4 for RGBA
     std::uint8_t& operator[](const int i) { return bgra[i]; }
@@ -43,8 +43,8 @@ public:
     void flip_horizontally();
     void flip_vertically();
 
-    TGAColor get_pixel(int x, int y) const;
-    void set_pixel(int x, int y, const TGAColor &color);
+    Color get_pixel(int x, int y) const;
+    void set_pixel(int x, int y, const Color &color);
 
     int width() const { return width_; };
     int height() const { return height_;};

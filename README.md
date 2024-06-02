@@ -10,11 +10,11 @@ Implement of Bresenham's line algorithm
 
 ```c++
 // Bresenham's line algorithm
-void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
+void line(int x0, int y0, int x1, int y1, TGAImage &image, Color color) {
     // if (dx < dy) the line is steep
     // we need to sample it along y axis
-    // but we can also transpose it, then we can still use x axis
-    // just remember to re-transpose it when drawing it
+    // but we can also get_transpose it, then we can still use x axis
+    // just remember to re-get_transpose it when drawing it
     bool steep = false;
     if (std::abs(x0 - x1) < std::abs(y0 - y1)) {
         std::swap(x0, y0);
@@ -35,7 +35,7 @@ void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
 
     for (int x = x0; x <= x1; x++) {
         if (steep) {
-            image.set(y, x, color); // if transposed, de−transpose
+            image.set(y, x, color); // if transposed, de−get_transpose
         } else {
             image.set(x, y, color);
         }
@@ -62,7 +62,7 @@ A traditional way to draw a triangle, but it is an old-school approach designed 
 
 ```c++
 // line sweeping triangle drawing
-void triangle(Vec2i p0, Vec2i p1, Vec2i p2, TGAImage &image, const TGAColor& color) {
+void triangle(Vec2i p0, Vec2i p1, Vec2i p2, TGAImage &image, const Color& color) {
     if (p0.y == p1.y && p1.y == p2.y) return;
     // make p0.y < p1.y < p2.y
     if (p0.y > p1.y) std::swap(p0, p1);
@@ -142,7 +142,7 @@ Then, we can draw the triangle.
 
 ```c++
 // triangle drawing with barycentric
-void triangle_barycentric(Vec2i *pts, TGAImage &image, const TGAColor& color) {
+void triangle_barycentric(Vec2i *pts, TGAImage &image, const Color& color) {
     // create bounding box
     Vec2i bbox_min(image.get_width() - 1, image.get_height() - 1);
     Vec2i bbox_max(0, 0);
@@ -184,7 +184,7 @@ for (int i = 0; i < model->n_faces(); ++i) {
         Vec3f word_coord = model->vert(face[j]);
         screen_coords[j] = Vec2i((int)((word_coord.x + 1.0f) * width / 2.0f), (int)((word_coord.y + 1.0f) * height / 2.0f));
     }
-    triangle_barycentric(screen_coords, image, TGAColor(rand() % 255, rand() % 255, rand() % 255, 255));
+    triangle_barycentric(screen_coords, image, Color(rand() % 255, rand() % 255, rand() % 255, 255));
 }
 ```
 
@@ -212,6 +212,6 @@ for (int i = 0; i < model->n_faces(); ++i) {
 
     float intensity = normal * light_dir;
     if (intensity > 0)
-        triangle_barycentric(screen_coords, image, TGAColor(intensity * 255, intensity * 255, intensity * 255, 255));
+        triangle_barycentric(screen_coords, image, Color(intensity * 255, intensity * 255, intensity * 255, 255));
 }
 ```

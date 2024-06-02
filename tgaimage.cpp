@@ -116,7 +116,7 @@ bool TGAImage::write_tga_file(const std::string& filename, const bool v_flip, co
     // write footer
     out.write(reinterpret_cast<const char *>(footer), sizeof(footer));
     if (!out.good()) {
-        std::cerr << "TGAImage::write_tga_file: cannor dump the tga file\n";
+        std::cerr << "TGAImage::write_tga_file: cannot dump the tga file\n";
         return false;
     }
     return true;
@@ -146,16 +146,16 @@ void TGAImage::flip_vertically() {
     }
 }
 
-TGAColor TGAImage::get_pixel(const int x, const int y) const {
+Color TGAImage::get_pixel(const int x, const int y) const {
     if (data_.empty() || x < 0 || y < 0 || x >= width_ || y >= height_)
         return {};
-    TGAColor ret = {0, 0, 0, 0, bpp_};
+    Color ret = {0, 0, 0, 0, bpp_};
     const std::uint8_t *pixel = data_.data() + (x + y * width_) * bpp_;
-    for (int i = bpp_; i--; ret.bgra[i] = pixel[i]);
+    for (int i = 0; i < bpp_; i++) ret.bgra[i] = pixel[i];
     return ret;
 }
 
-void TGAImage::set_pixel(const int x, const int y, const TGAColor &color) {
+void TGAImage::set_pixel(const int x, const int y, const Color &color) {
     if (data_.empty() || x<0 || y<0 || x >= width_ || y >= height_) return;
     memcpy(data_.data() + (x + y * width_) * bpp_, color.bgra, bpp_);
 }
@@ -164,9 +164,9 @@ bool TGAImage::load_rle_data(std::ifstream &in) {
     size_t pixel_count = width_ * height_;
     size_t current_pixel = 0;
     size_t current_byte  = 0;
-    TGAColor color_buffer;
+    Color color_buffer;
     do {
-        std::uint8_t chunk_header = 0;
+        std::uint8_t chunk_header;
         chunk_header = in.get();
         if (!in.good()) {
             std::cerr << "TGAImage::load_rle_data: an error occurred while read the data\n";

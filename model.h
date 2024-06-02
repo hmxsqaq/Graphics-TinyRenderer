@@ -1,26 +1,38 @@
-//
-// Created by wzh56 on 2024/5/22.
-//
-
 #ifndef GRAPHICS_TINYRENDERER_MODEL_H
 #define GRAPHICS_TINYRENDERER_MODEL_H
 
 #include <vector>
+#include <string>
 #include "geometry.h"
+#include "tgaimage.h"
 
 class Model {
 public:
-    explicit Model(const char *filename);
-    ~Model();
-    Vec3f vert(int idx);
-    std::vector<int> face(int idx);
+    Model(const std::string& filename);
 
-    int n_verts() const;
-    int n_faces() const;
-
+    const TGAImage& diffuse()                       const { return diffuse_map_;  }
+    const TGAImage& specular()                      const { return specular_map_; }
+    int n_verts()                                   const { return static_cast<int>(verts_.size()); }
+    int n_faces()                                   const { return static_cast<int>(facet_vrt_.size() / 3); }
+    Vec3 vert(const int i)                          const { return verts_[i]; }
+    Vec3 vert(const int i_face, const int i_vert)   const { return verts_[facet_vrt_[i_face * 3 + i_vert]]; }
+    Vec2 uv(const int i_face, const int i_vert)     const { return tex_coord_[facet_tex_[i_face * 3 + i_vert]]; }
+    Vec3 normal(const int i_face, const int i_vert) const { return norms_[facet_nrm_[i_face * 3 + i_vert]]; }
+    Vec3 normal(const Vec2 &uvf)                    const {
+        Color c = normal_map_.get_pixel((int)uvf[0] * normal_map_.width(), (int )uvf[1] * normal_map_.height());
+        return Vec3{(double)c[2], (double)c[1], (double)c[0]}*2./255. - Vec3{1,1,1};
+    }
 private:
-    std::vector<Vec3f> verts_;
-    std::vector<std::vector<int>> faces_;
+    std::vector<Vec3> verts_{};     // vertices
+    std::vector<Vec2> tex_coord_{}; // tex coords
+    std::vector<Vec3> norms_{};     // normal
+    std::vector<int> facet_vrt_{};  // facet vertices index
+    std::vector<int> facet_tex_{};  // facet texture index
+    std::vector<int> facet_nrm_{};  // facet normal index
+    TGAImage diffuse_map_{};        // diffuse color texture
+    TGAImage normal_map_{};         // normal map texture
+    TGAImage specular_map_{};       // specular map texture
+    void load_texture(const std::string& filename, const std::string& suffix, TGAImage &img);
 };
 
 
