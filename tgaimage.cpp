@@ -249,3 +249,8 @@ bool TGAImage::unload_rle_data(std::ofstream &out) const {
     }
     return true;
 }
+
+std::ostream &operator<<(std::ostream &out, const Color &color) {
+    for (unsigned char i : color.bgra) out << (int)i << " ";
+    return out;
+}

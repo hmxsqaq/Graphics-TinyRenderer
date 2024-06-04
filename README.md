@@ -142,7 +142,7 @@ Then, we can draw the triangle.
 
 ```c++
 // triangle drawing with barycentric
-void triangle_barycentric(Vec2i *pts, TGAImage &image, const Color& color) {
+void draw_triangle_barycentric(Vec2i *pts, TGAImage &image, const Color& color) {
     // create bounding box
     Vec2i bbox_min(image.get_width() - 1, image.get_height() - 1);
     Vec2i bbox_max(0, 0);
@@ -184,7 +184,7 @@ for (int i = 0; i < model->n_faces(); ++i) {
         Vec3f word_coord = model->vert(face[j]);
         screen_coords[j] = Vec2i((int)((word_coord.x + 1.0f) * width / 2.0f), (int)((word_coord.y + 1.0f) * height / 2.0f));
     }
-    triangle_barycentric(screen_coords, image, Color(rand() % 255, rand() % 255, rand() % 255, 255));
+    draw_triangle_barycentric(screen_coords, image, Color(rand() % 255, rand() % 255, rand() % 255, 255));
 }
 ```
 
@@ -212,6 +212,6 @@ for (int i = 0; i < model->n_faces(); ++i) {
 
     float intensity = normal * light_dir;
     if (intensity > 0)
-        triangle_barycentric(screen_coords, image, Color(intensity * 255, intensity * 255, intensity * 255, 255));
+        draw_triangle_barycentric(screen_coords, image, Color(intensity * 255, intensity * 255, intensity * 255, 255));
 }
 ```

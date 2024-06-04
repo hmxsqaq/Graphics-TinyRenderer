@@ -61,8 +61,48 @@ void draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, TGAImage &image, cons
     }
 }
 
-Vec3 get_barycentric(const Vec2 *tri, const Vec2 &P) {
-    Mat<3, 3> ABC = {{embed<3>(tri[0]), embed<3>(tri[1]), embed<3>(tri[2])}};
-    if (ABC.get_det() < 1e-3) return {-1, 1, 1}; // degenerate check
+Vec3 get_barycentric(const Vec2 *t, const Vec2 &P) {
+    Mat<3, 3> ABC = {{embed<3>(t[0]), embed<3>(t[1]), embed<3>(t[2])}};
+    if (std::abs(ABC.get_det()) < 1e-3) return {-1, 1, 1}; // degenerate check
     return ABC.get_invert().get_transpose() * embed<3>(P);
 }
+
+bool is_inside_triangle_cross_product(Vec2 *t, const Vec2 &P) {
+    Vec2 AB = t[1] - t[0];
+    Vec2 BC = t[2] - t[1];
+    Vec2 CA = t[0] - t[2];
+    Vec2 AP = P - t[0];
+    Vec2 BP = P - t[1];
+    Vec2 CP = P - t[2];
+    double z1 = cross(AB, AP);
+    double z2 = cross(BC, BP);
+    double z3 = cross(CA, CP);
+    return (z1 > 0 && z2 > 0 && z3 >0) || (z1 < 0 && z2 < 0 && z3 < 0);
+}
+
+void draw_triangle_barycentric(const Vec2 *t, TGAImage &image, const Color &color) {
+    // create bounding box
+    int bbox_min[2] = {image.width() - 1, image.height() - 1};
+    int bbox_max[2] = {0, 0};
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 2; ++j) {
+            bbox_min[j] = std::min(bbox_min[j], static_cast<int>(t[i][j]));
+            bbox_max[j] = std::max(bbox_max[j], static_cast<int>(t[i][j]));
+        }
+    // Ensure the bounding box is within the image boundaries
+    bbox_min[0] = std::max(0, bbox_min[0]);
+    bbox_min[1] = std::max(0, bbox_min[1]);
+    bbox_max[0] = std::min(image.width() - 1, bbox_max[0]);
+    bbox_max[1] = std::min(image.height() - 1, bbox_max[1]);
+
+    for (int x = bbox_min[0]; x <= bbox_max[0]; ++x) {
+        for (int y = bbox_min[1]; y <= bbox_max[1]; ++y) {
+            Vec3 bc = get_barycentric(t, {static_cast<double>(x), static_cast<double>(y)});
+            if (bc.x >= 0 && bc.y >= 0 && bc.z >= 0) {
+                image.set_pixel(x, y, color);
+            }
+        }
+    }
+}
+
+

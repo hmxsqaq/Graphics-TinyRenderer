@@ -29,6 +29,8 @@ struct Color {
     std::uint8_t& operator[](const int i) { return bgra[i]; }
 };
 
+std::ostream& operator<<(std::ostream& out, const Color& color);
+
 class TGAImage {
 public:
     // TGAImage color formats
