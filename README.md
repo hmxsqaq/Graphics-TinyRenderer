@@ -10,7 +10,7 @@ Implement of Bresenham's line algorithm
 
 ```c++
 // Bresenham's line algorithm
-void line(int x0, int y0, int x1, int y1, TGAImage &image, Color color) {
+void line(int x0, int y0, int x1, int y1, TGAHandler &image, Color color) {
     // if (dx < dy) the line is steep
     // we need to sample it along y axis
     // but we can also get_transpose it, then we can still use x axis
@@ -62,7 +62,7 @@ A traditional way to draw a triangle, but it is an old-school approach designed 
 
 ```c++
 // line sweeping triangle drawing
-void triangle(Vec2i p0, Vec2i p1, Vec2i p2, TGAImage &image, const Color& color) {
+void triangle(Vec2i p0, Vec2i p1, Vec2i p2, TGAHandler &image, const Color& color) {
     if (p0.y == p1.y && p1.y == p2.y) return;
     // make p0.y < p1.y < p2.y
     if (p0.y > p1.y) std::swap(p0, p1);
@@ -142,7 +142,7 @@ Then, we can draw the triangle.
 
 ```c++
 // triangle drawing with barycentric
-void draw_triangle_barycentric(Vec2i *pts, TGAImage &image, const Color& color) {
+void draw_triangle_barycentric(Vec2i *pts, TGAHandler &image, const Color& color) {
     // create bounding box
     Vec2i bbox_min(image.get_width() - 1, image.get_height() - 1);
     Vec2i bbox_max(0, 0);

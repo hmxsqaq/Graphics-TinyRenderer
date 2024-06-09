@@ -43,14 +43,17 @@ Model::Model(const std::string& filename) {
         }
     }
     std::cout << "# v# " << n_verts() << " f# "  << n_faces() << " vt# " << tex_coord_.size() << " vn# " << norms_.size() << std::endl;
-    load_texture(filename, "_diffuse.tga",    diffuse_map_ );
-    load_texture(filename, "_nm_tangent.tga", normal_map_);
-    load_texture(filename, "_spec.tga",       specular_map_);
+    diffuse_map_ = load_texture(filename, "_diffuse.tga");
+    normal_map_ = load_texture(filename, "_nm_tangent.tga");
+    specular_map_ = load_texture(filename, "_spec.tga");
 }
 
-void Model::load_texture(const std::string& filename, const std::string& suffix, TGAImage &img) {
+Renderer Model::load_texture(const std::string& filename, const std::string& suffix) {
     size_t dot = filename.find_last_of('.');
-    if (dot == std::string::npos) return;
-    std::string tex_file = filename.substr(0, dot) + suffix;
-    std::cout << "texture file " << tex_file << " loading " << (img.read_tga_file(tex_file) ? "ok" : "failed") << std::endl;
+    if (dot == std::string::npos) return {};
+    std::string texture_file_name = filename.substr(0, dot) + suffix;
+    Renderer renderer = TGAHandler::read_tga_file(texture_file_name);
+    if (renderer.width() <= 0 || renderer.height() <= 0) return {};
+    std::cout << "loading texture file: " << texture_file_name << std::endl;
+    return renderer;
 }

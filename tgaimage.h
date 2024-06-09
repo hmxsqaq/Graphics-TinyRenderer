@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <fstream>
 #include <vector>
+#include "renderer.h"
 
 // standard TGA header
 #pragma pack(push, 1)
@@ -23,41 +24,15 @@ struct TGAHeader {
 };
 #pragma pack(pop)
 
-struct Color {
-    std::uint8_t bgra[4] = {0,0,0,0}; // blue, green, red, alpha
-    std::uint8_t bytespp = 4; // number of bytes per pixel, 3 for RGB, 4 for RGBA
-    std::uint8_t& operator[](const int i) { return bgra[i]; }
-};
-
-std::ostream& operator<<(std::ostream& out, const Color& color);
-
-class TGAImage {
+class TGAHandler {
 public:
-    // TGAImage color formats
-    enum Format { GRAYSCALE = 1, RGB = 3, RGBA = 4 };
+    TGAHandler() = delete;
 
-    TGAImage() = default;
-    TGAImage(int width, int height, int bits_per_pixel);
-
-    bool read_tga_file(const std::string& filename);
-    bool write_tga_file(const std::string& filename, bool v_flip = true, bool rle = true) const;
-
-    void flip_horizontally();
-    void flip_vertically();
-
-    Color get_pixel(int x, int y) const;
-    void set_pixel(int x, int y, const Color &color);
-
-    int width() const { return width_; };
-    int height() const { return height_;};
+    static Renderer read_tga_file(const std::string& filename);
+    static bool write_tga_file(const std::string& filename,const Renderer& renderer, bool v_flip = true, bool rle = true);
 private:
-    bool load_rle_data(std::ifstream &in);
-    bool unload_rle_data(std::ofstream &out) const;
-
-    int width_ = 0;
-    int height_ = 0;
-    std::uint8_t bpp_ = 0; // bits per pixel
-    std::vector<std::uint8_t> data_ = {};
+    static bool load_rle_data(std::ifstream &in, Renderer& renderer);
+    static bool unload_rle_data(std::ofstream &out, const Renderer& renderer);
 };
 
 #endif //GRAPHICS_TINYRENDERER_TGAIMAGE_H

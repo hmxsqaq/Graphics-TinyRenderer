@@ -8,12 +8,12 @@
 
 class Model {
 public:
-    Model(const std::string& filename);
+    explicit Model(const std::string& filename);
 
-    const TGAImage& diffuse()                       const { return diffuse_map_;  }
-    const TGAImage& specular()                      const { return specular_map_; }
-    int n_verts()                                   const { return static_cast<int>(verts_.size()); }
-    int n_faces()                                   const { return static_cast<int>(facet_vrt_.size() / 3); }
+    const Renderer& diffuse()  const { return diffuse_map_;  }
+    const Renderer& specular() const { return specular_map_; }
+    int n_verts() const { return static_cast<int>(verts_.size()); }
+    int n_faces() const { return static_cast<int>(facet_vrt_.size() / 3); }
     Vec3 vert(const int i)                          const { return verts_[i]; }
     Vec3 vert(const int i_face, const int i_vert)   const { return verts_[facet_vrt_[i_face * 3 + i_vert]]; }
     Vec2 uv(const int i_face, const int i_vert)     const { return tex_coord_[facet_tex_[i_face * 3 + i_vert]]; }
@@ -29,10 +29,10 @@ private:
     std::vector<int> facet_vrt_{};  // facet vertices index
     std::vector<int> facet_tex_{};  // facet texture index
     std::vector<int> facet_nrm_{};  // facet normal index
-    TGAImage diffuse_map_{};        // diffuse color texture
-    TGAImage normal_map_{};         // normal map texture
-    TGAImage specular_map_{};       // specular map texture
-    void load_texture(const std::string& filename, const std::string& suffix, TGAImage &img);
+    Renderer diffuse_map_{};        // diffuse color texture
+    Renderer normal_map_{};         // normal map texture
+    Renderer specular_map_{};       // specular map texture
+    static Renderer load_texture(const std::string& filename, const std::string& suffix);
 };
 
 
