@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include "geometry.h"
-#include "tgaimage.h"
+#include "tgahandler.h"
 
 class Model {
 public:

@@ -1,4 +1,4 @@
-#include "tgaimage.h"
+#include "tgahandler.h"
 #include "model.h"
 
 const Color WHITE = {255, 255, 255, 255};
