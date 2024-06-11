@@ -4,120 +4,134 @@
 #include <cmath>
 #include <cassert>
 #include <iostream>
+#include <array>
+#include "color.h"
 
 // Vector
-template<int N> struct Vec {
-    double data[N] = {0};
+template<int N>
+struct Vec {
+    std::array<double, N> data;
 
-    double& operator[](const int i)       { assert(i>=0 && i < N); return data[i]; }
-    double  operator[](const int i) const { assert(i>=0 && i < N); return data[i]; }
-    double  norm2()                 const { return *this * *this; }
-    double  norm()                  const { return std::sqrt(norm2()); }
+    constexpr double& operator[](const int i)       noexcept { assert(i>=0 && i < N); return data[i]; }
+    constexpr double  operator[](const int i) const noexcept { assert(i>=0 && i < N); return data[i]; }
+    constexpr double  norm2()                 const noexcept { return *this * *this; }
+    constexpr double  norm()                            const noexcept { return std::sqrt(norm2()); }
 };
 
-template<int N> double operator*(const Vec<N>& vec1, const Vec<N>& vec2) {
+template<int N>
+constexpr double operator*(const Vec<N>& vec1, const Vec<N>& vec2) noexcept {
     double ret = 0;
     for (int i = 0; i < N; i++) ret += vec1[i] * vec2[i];
     return ret;
 }
 
-template<int N> Vec<N> operator*(const double& val, const Vec<N> &vec) {
+template<int N>
+constexpr Vec<N> operator*(const double& val, const Vec<N> &vec) noexcept {
     Vec<N> ret = vec;
     for (int i = 0; i < N; i++) ret[i] *= val;
     return ret;
 }
 
-template<int N> Vec<N> operator*(const Vec<N>& vec, const double& val) {
+template<int N>
+constexpr Vec<N> operator*(const Vec<N>& vec, const double& val) noexcept {
     Vec<N> ret = vec;
     for (int i = 0; i < N; i++) ret[i] *= val;
     return ret;
 }
 
-template<int N> Vec<N> operator/(const Vec<N>& vec, const double& val) {
+template<int N>
+constexpr Vec<N> operator/(const Vec<N>& vec, const double& val) noexcept {
+    assert(val != 0);
     Vec<N> ret = vec;
     for (int i = 0; i < N; i++) ret[i] /= val;
     return ret;
 }
 
-template<int N> Vec<N> operator+(const Vec<N>& vec1, const Vec<N>& vec2) {
+template<int N>
+constexpr Vec<N> operator+(const Vec<N>& vec1, const Vec<N>& vec2) noexcept {
     Vec<N> ret = vec1;
     for (int i = 0; i < N; i++) ret[i] += vec2[i];
     return ret;
 }
 
-template<int N> Vec<N> operator-(const Vec<N>& vec1, const Vec<N>& vec2) {
+template<int N>
+constexpr Vec<N> operator-(const Vec<N>& vec1, const Vec<N>& vec2) noexcept {
     Vec<N> ret = vec1;
     for (int i = 0; i < N; i++) ret[i] -= vec2[i];
     return ret;
 }
 
-template<int N1,int N2> Vec<N1> embed(const Vec<N2> &vec, double fill = 1) {
-    Vec<N1> ret;
-    for (int i = 0; i < N1; i++) ret[i] = (i < N2 ? vec[i] : fill);
+template<int N1, int N2>
+constexpr Vec<N1> resize(const Vec<N2> &vec, double fill = 1) noexcept {
+    Vec<N1> ret{};
+    for (int i = 0; i < N1; i++)
+        ret[i] = (i < N2 ? vec[i] : fill);
     return ret;
 }
 
-template<int N1,int N2> Vec<N1> project(const Vec<N2> &vec) {
-    Vec<N1> ret;
-    for (int i = 0; i < N1; i++) ret[i] = vec[i];
-    return ret;
-}
-
-template<int N> std::ostream& operator<<(std::ostream& out, const Vec<N>& vec) {
+template<int N>
+constexpr std::ostream& operator<<(std::ostream& out, const Vec<N>& vec) noexcept {
     for (int i = 0; i < N; i++) out << vec[i] << " ";
     return out;
 }
 
-template<> struct Vec<2> {
-    double x, y;
-    double& operator[](const int i)       { assert(i >= 0 && i < 2); return i ? y : x; }
-    double  operator[](const int i) const { assert(i >= 0 && i < 2); return i ? y : x; }
-    double  norm2()                 const { return *this * *this; }
-    double  norm()                  const { return std::sqrt(norm2()); }
-    Vec<2>  normalize()             const { return (*this) / norm(); }
+template<>
+struct Vec<2> {
+    double x = 0, y = 0;
+    constexpr double& operator[](const int i)       noexcept { assert(i >= 0 && i < 2); return i ? y : x; }
+    constexpr double  operator[](const int i) const noexcept { assert(i >= 0 && i < 2); return i ? y : x; }
+    constexpr double  norm2()                 const noexcept { return *this * *this; }
+    constexpr double  norm()                  const noexcept { return std::sqrt(norm2()); }
+    constexpr Vec<2>  normalize()             const noexcept { assert(norm() != 0); return (*this) / norm(); }
 };
 
-template<> struct Vec<3> {
-    double x, y, z;
-    double& operator[](const int i)       { assert(i >= 0 && i < 3); return i ? (i == 1 ? y : z) : x; }
-    double  operator[](const int i) const { assert(i >= 0 && i < 3); return i ? (i == 1 ? y : z) : x; }
-    double  norm2()                 const { return *this * *this; }
-    double  norm()                  const { return std::sqrt(norm2()); }
-    Vec<3>  normalize()             const { return (*this) / norm(); }
+template<>
+struct Vec<3> {
+    double x = 0, y = 0, z = 0;
+    constexpr double& operator[](const int i)       noexcept { assert(i >= 0 && i < 3); return i ? (i == 1 ? y : z) : x; }
+    constexpr double  operator[](const int i) const noexcept { assert(i >= 0 && i < 3); return i ? (i == 1 ? y : z) : x; }
+    constexpr double  norm2()                 const noexcept { return *this * *this; }
+    constexpr double  norm()                  const noexcept { return std::sqrt(norm2()); }
+    constexpr Vec<3>  normalize()             const noexcept { assert(norm() != 0); return (*this) / norm(); }
 };
 
-typedef Vec<2> Vec2;
-typedef Vec<3> Vec3;
-typedef Vec<4> Vec4;
+using Vec2 = Vec<2>;
+using Vec3 = Vec<3>;
+using Vec4 = Vec<4>;
 
 template<int N>
-double dot  (const Vec<N> &v1, const Vec<N> &v2) { return v1 * v2; }
-double cross(const Vec2 &v1,   const Vec2 &v2);
-Vec3   cross(const Vec3 &v1,   const Vec3 &v2);
+constexpr double dot(const Vec<N> &v1, const Vec<N> &v2) noexcept { return v1 * v2; }
+constexpr double cross(const Vec2 &v1, const Vec2 &v2) noexcept { return v1.x * v2.y - v1.y * v2.x; }
+constexpr Vec3 cross(const Vec3 &v1, const Vec3 &v2) noexcept {
+    return Vec<3>{v1.y * v2.z - v1.z * v2.y,
+                  v1.z * v2.x - v1.x * v2.z,
+                  v1.x * v2.y - v1.y * v2.x};
+}
 
 // Matrix
 template<int N> struct Det;
 
-template<int ROW, int COL> struct Mat {
-    Vec<COL> rows[ROW] = {{}};
+template<int ROW, int COL>
+struct Mat {
+    std::array<Vec<COL>, ROW> rows;
 
-    Vec<COL>&       operator[](const int i)       { assert(i >= 0 && i < ROW); return rows[i]; }
-    const Vec<COL>& operator[](const int i) const { assert(i >= 0 && i < ROW); return rows[i]; }
+    constexpr Vec<COL>&       operator[](const int i)       noexcept { assert(i >= 0 && i < ROW); return rows[i]; }
+    constexpr const Vec<COL>& operator[](const int i) const noexcept { assert(i >= 0 && i < ROW); return rows[i]; }
 
-    Vec<ROW> get_col(const int idx) const {
+    constexpr Vec<ROW> get_col(const int idx) const noexcept {
         assert(idx >= 0 && idx < COL);
         Vec<ROW> ret;
         for (int i = 0; i < ROW; i++) ret[i] = rows[i][idx];
         return ret;
     }
 
-    void set_col(const int idx, const Vec<ROW> &v) {
+    constexpr void set_col(const int idx, const Vec<ROW> &v) noexcept {
         assert(idx >= 0 && idx < COL);
         for (int i = 0; i < ROW; i++) rows[i][idx] = v[i];
     }
 
     // get identity matrix(单位矩阵)
-    static Mat<ROW, COL> identity() {
+    constexpr static Mat<ROW, COL> identity() noexcept {
         Mat<ROW, COL> ret;
         for (int i = 0; i < ROW; i++)
             for (int j = 0; j < COL; j++)
@@ -126,7 +140,7 @@ template<int ROW, int COL> struct Mat {
     }
 
     // get transpose matrix(转置矩阵)
-    Mat<COL, ROW> get_transpose() const {
+    constexpr Mat<COL, ROW> get_transpose() const noexcept {
         Mat<COL, ROW> ret;
         for (int i = 0; i < COL; i++)
             for (int j = 0; j < ROW; j++)
@@ -135,12 +149,12 @@ template<int ROW, int COL> struct Mat {
     }
 
     // get determinant(行列式)
-    double get_det() const {
+    constexpr double get_det() const noexcept {
         return Det<COL>::det(*this);
     }
 
     // get minor matrix(代数余子式矩阵)
-    Mat<ROW - 1, COL - 1> get_minor(const int row, const int col) const {
+    constexpr Mat<ROW - 1, COL - 1> get_minor(const int row, const int col) const noexcept {
         Mat<ROW - 1, COL - 1> ret;
         for (int i = 0; i < ROW - 1; i++)
             for (int j = 0; j < COL - 1; j++)
@@ -149,12 +163,12 @@ template<int ROW, int COL> struct Mat {
     }
 
     // get cofactor(代数余子式)
-    double get_cofactor(const int row, const int col) const {
+    constexpr double get_cofactor(const int row, const int col) const noexcept {
         return get_minor(row, col).get_det() * ((row + col) % 2 ? -1 : 1); // recursion
     }
 
     // get adjugate matrix(伴随矩阵)
-    Mat<COL, ROW> get_adjugate() const {
+    constexpr Mat<COL, ROW> get_adjugate() const noexcept {
         Mat<ROW, COL> ret;
         for (int i = 0; i < ROW; i++)
             for (int j = 0; j < COL; j++)
@@ -163,32 +177,38 @@ template<int ROW, int COL> struct Mat {
     }
 
     // get invert matrix
-    Mat<ROW, COL> get_invert() const {
+    constexpr Mat<ROW, COL> get_invert() const {
         Mat<ROW, COL> ret = get_adjugate();
-        return ret / (ret.get_col(0) * rows[0]);
+        double det = ret.get_col(0) * rows[0];
+        assert(det != 0);
+        return ret / det;
     }
 };
 
-template<int ROW, int COL> Mat<ROW, COL> operator*(const Mat<ROW, COL>& mat, const double& val) {
+template<int ROW, int COL>
+constexpr Mat<ROW, COL> operator*(const Mat<ROW, COL>& mat, const double& val) noexcept {
     Mat<ROW, COL> ret;
     for (int i = 0; i < ROW; i++) ret[i] = mat[i] * val;
     return ret;
 }
 
-template<int ROW, int COL> Mat<ROW, COL> operator*(const double& val, const Mat<ROW, COL>& mat) {
+template<int ROW, int COL>
+constexpr Mat<ROW, COL> operator*(const double& val, const Mat<ROW, COL>& mat) noexcept {
     Mat<ROW, COL> ret;
     for (int i = 0; i < ROW; i++) ret[i] = mat[i] * val;
     return ret;
 }
 
-template<int ROW, int COL> Vec<ROW> operator*(const Mat<ROW, COL>& mat, const Vec<COL>& vec) {
+template<int ROW, int COL>
+constexpr Vec<ROW> operator*(const Mat<ROW, COL>& mat, const Vec<COL>& vec) noexcept {
     Vec<ROW> ret;
     for (int i = 0; i < ROW; i++) ret[i] = mat[i] * vec;
     return ret;
 }
 
 // [ROW,MID] * [MID*COL]
-template<int ROW, int MID, int COL> Mat<ROW, COL> operator*(const Mat<ROW, MID>& mat1, const Mat<MID, COL>& mat2) {
+template<int ROW, int MID, int COL>
+constexpr Mat<ROW, COL> operator*(const Mat<ROW, MID>& mat1, const Mat<MID, COL>& mat2) noexcept {
     Mat<ROW, COL> ret;
     for (int i = 0; i < ROW; ++i)
         for (int j = 0; j < COL; ++j)
@@ -196,13 +216,16 @@ template<int ROW, int MID, int COL> Mat<ROW, COL> operator*(const Mat<ROW, MID>&
     return ret;
 }
 
-template<int ROW,int COL> Mat<ROW,COL> operator/(const Mat<ROW,COL>& mat, const double& val) {
+template<int ROW,int COL>
+constexpr Mat<ROW,COL> operator/(const Mat<ROW,COL>& mat, const double& val) noexcept {
+    assert(val != 0);
     Mat<ROW,COL> ret;
     for (int i = 0; i < ROW; i++) ret[i] = mat[i] / val;
     return ret;
 }
 
-template<int ROW,int COL> Mat<ROW,COL> operator+(const Mat<ROW,COL>& mat1, const Mat<ROW,COL>& mat2) {
+template<int ROW,int COL>
+constexpr Mat<ROW,COL> operator+(const Mat<ROW,COL>& mat1, const Mat<ROW,COL>& mat2) noexcept {
     Mat<ROW,COL> ret;
     for (int i = 0; i < ROW; i++)
         for (int j = 0; j < COL; j++)
@@ -210,7 +233,8 @@ template<int ROW,int COL> Mat<ROW,COL> operator+(const Mat<ROW,COL>& mat1, const
     return ret;
 }
 
-template<int ROW,int COL> Mat<ROW,COL> operator-(const Mat<ROW,COL>& mat1, const Mat<ROW,COL>& mat2) {
+template<int ROW,int COL>
+constexpr Mat<ROW,COL> operator-(const Mat<ROW,COL>& mat1, const Mat<ROW,COL>& mat2) noexcept {
     Mat<ROW,COL> ret;
     for (int i = 0; i < ROW; i++)
         for (int j = 0; j < COL; j++)
@@ -218,13 +242,15 @@ template<int ROW,int COL> Mat<ROW,COL> operator-(const Mat<ROW,COL>& mat1, const
     return ret;
 }
 
-template<int ROW, int COL> std::ostream& operator<<(std::ostream& out, const Mat<ROW, COL>& mat) {
-    for (int i = 0; i < ROW; i++) out << mat[i] << std::endl;
+template<int ROW, int COL>
+constexpr std::ostream& operator<<(std::ostream& out, const Mat<ROW, COL>& mat) noexcept {
+    for (int i = 0; i < ROW; i++) out << mat[i] << "\n";
     return out;
 }
 
-template<int N> struct Det {
-    static double det(const Mat<N, N>& src) { // recursion
+template<int N>
+struct Det {
+    constexpr static double det(const Mat<N, N>& src) noexcept { // recursion
         double ret = 0;
         for (int i = 0; i < N; i++) ret += src[0][i] * src.get_cofactor(0, i);
         return ret;
@@ -232,9 +258,31 @@ template<int N> struct Det {
 };
 
 template<> struct Det<1> {
-    static double det(const Mat<1, 1>& src) { // recursion stop point
+    constexpr static double det(const Mat<1, 1>& src) noexcept { // recursion stop point
         return src[0][0];
     }
 };
+
+struct Triangle {
+    std::array<Vec4, 3> vert{};
+    std::array<Vec3, 3> normal{};
+    std::array<Vec2, 3> tex_coords{};
+    std::array<Color, 3> color{};
+
+    constexpr Vec4&        operator[](const int i)       noexcept { assert(i >= 0 && i < 3); return vert[i]; }
+    constexpr const Vec4&  operator[](const int i) const noexcept { assert(i >= 0 && i < 3); return vert[i]; }
+
+    constexpr auto to_vec2() const noexcept {
+        return std::array<Vec2, 3> {
+            resize<2>(vert[0]),
+            resize<2>(vert[1]),
+            resize<2>(vert[2])};
+    }
+};
+
+constexpr inline std::ostream& operator<<(std::ostream& out, const Triangle& t) noexcept {
+    for (int i = 0; i < 3; i++) out << t[i] << "\n";
+    return out;
+}
 
 #endif //GRAPHICS_TINYRENDERER_GEOMETRY_H

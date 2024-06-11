@@ -2,7 +2,8 @@
 
 This is the final project for Computer Graphics course, a tiny software renderer based on [tinyrenderer](https://github.com/ssloy/tinyrenderer/wiki).
 
-It does not rely on any third-party libraries, which can be a good practice for learning computer graphics.
+My goal is to create a tiny and flexible renderer core that does not rely on any third-party libraries,
+which can be a good practice for learning computer graphics.
 
 ## Architecture / API
 

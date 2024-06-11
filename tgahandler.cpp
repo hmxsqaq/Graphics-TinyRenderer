@@ -5,7 +5,7 @@ Renderer TGAHandler::read_tga_file(const std::string &filename) {
     std::ifstream in;
     in.open(filename, std::ios::binary);
     if (!in.is_open()) {
-        std::cerr << "TGAHandler::read_tga_file: cannot open file " << filename << "\n";
+        std::cerr << "Cannot open file: " << filename << "\n";
         return {};
     }
 
@@ -13,37 +13,37 @@ Renderer TGAHandler::read_tga_file(const std::string &filename) {
     TGAHeader header;
     in.read(reinterpret_cast<char *>(&header), sizeof(header));
     if (!in.good()) {
-        std::cerr << "TGAHandler::read_tga_file: cannot read the header\n";
+        std::cerr << "Cannot read the TGA header\n";
         return {};
     }
 
     // load width & height & bpp from header
     auto width = header.width;
     auto height = header.height;
-    auto bpp = header.bits_per_pixel;
+    auto bpp = header.bits_per_pixel >> 3; // /= 8
     if (width <= 0 || height <= 0 || (bpp != Renderer::GRAYSCALE &&
                                         bpp != Renderer::RGB &&
                                         bpp != Renderer::RGBA)) {
-        std::cerr << "TGAHandler::read_tga_file: bad width/height/bpp value\n";
+        std::cerr << "Bad width/height/bpp value: width " << width << " height " << height << " bpp " << bpp << "\n";
         return {};
     }
 
     Renderer renderer{width, height, bpp};
 
-    // read data
+    // read frame_data
     if (header.data_type_code == 3 || header.data_type_code == 2) {
         in.read(reinterpret_cast<char *>(renderer.frame_buffer().data()), (long long)width * height * bpp);
         if (!in.good()) {
-            std::cerr << "TGAHandler::read_tga_file: cannot read the data\n";
+            std::cerr << "Cannot read frame data\n";
             return {};
         }
     } else if (header.data_type_code == 10 || header.data_type_code == 11) {
         if (!load_rle_data(in, renderer)) {
-            std::cerr << "TGAHandler::read_tga_file: cannot read the data\n";
+            std::cerr << "Cannot load RLE data\n";
             return {};
         }
     } else {
-        std::cerr << "TGAHandler::read_tga_file: unknown file format " << (int)header.data_type_code << "\n";
+        std::cerr << "Unknown file format " << (int)header.data_type_code << "\n";
         return {};
     }
 
@@ -52,7 +52,7 @@ Renderer TGAHandler::read_tga_file(const std::string &filename) {
         renderer.flip_vertically();
     if (header.image_descriptor & 0x10)
         renderer.flip_horizontally();
-    std::cerr << width << " x " << height << " / " << bpp * 8 << "\n";
+    std::cout << width << " x " << height << " / " << bpp * 8 << "\n";
     return renderer;
 }
 
@@ -72,7 +72,7 @@ bool TGAHandler::write_tga_file(const std::string &filename, const Renderer &ren
     auto bpp = renderer.bpp();
     auto width = renderer.width();
     auto height = renderer.height();
-    auto data = renderer.data();
+    auto data = renderer.frame_data();
 
     // prepare header
     TGAHeader header = {};
@@ -93,11 +93,11 @@ bool TGAHandler::write_tga_file(const std::string &filename, const Renderer &ren
     if (!rle) {
         out.write(reinterpret_cast<const char *>(data), width * height * bpp);
         if (!out.good()) {
-            std::cerr << "TGAHandler::write_tga_file: cannot unload raw data\n";
+            std::cerr << "TGAHandler::write_tga_file: cannot unload raw frame_data\n";
             return false;
         }
     } else if (!unload_rle_data(out, renderer)) {
-        std::cerr << "TGAHandler::write_tga_file: cannot unload rle data\n";
+        std::cerr << "TGAHandler::write_tga_file: cannot unload rle frame_data\n";
         return false;
     }
     out.write(reinterpret_cast<const char *>(developer_area_ref), sizeof(developer_area_ref));
@@ -135,13 +135,13 @@ bool TGAHandler::load_rle_data(std::ifstream &in, Renderer& renderer) {
         std::uint8_t chunk_header;
         chunk_header = in.get();
         if (!in.good()) {
-            std::cerr << "TGAHandler::load_rle_data: an error occurred while read the data\n";
+            std::cerr << "TGAHandler::load_rle_data: an error occurred while read the frame_data\n";
             return false;
         }
         if (chunk_header < 128) {
             chunk_header++;
             for (int i = 0; i < chunk_header; i++) {
-                in.read(reinterpret_cast<char *>(color_buffer.bgra), bpp);
+                in.read(reinterpret_cast<char *>(color_buffer.bgra.data()), bpp);
                 if (!in.good()) {
                     std::cerr << "TGAHandler::load_rle_data: an error occurred while reading the header\n";
                     return false;
@@ -156,7 +156,7 @@ bool TGAHandler::load_rle_data(std::ifstream &in, Renderer& renderer) {
             }
         } else {
             chunk_header -= 127;
-            in.read(reinterpret_cast<char *>(color_buffer.bgra), bpp);
+            in.read(reinterpret_cast<char *>(color_buffer.bgra.data()), bpp);
             if (!in.good()) {
                 std::cerr << "TGAHandler::load_rle_data: an error occurred while reading the header\n";
                 return false;
@@ -181,7 +181,7 @@ bool TGAHandler::unload_rle_data(std::ofstream &out, const Renderer &renderer) {
     auto bpp = renderer.bpp();
     auto width = renderer.width();
     auto height = renderer.height();
-    auto data = renderer.data();
+    auto data = renderer.frame_data();
 
     const std::uint8_t max_chunk_length = 128;
     size_t n_pixels = width * height;

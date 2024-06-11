@@ -37,7 +37,7 @@ Model::Model(const std::string& filename) {
                 counter++;
             }
             if (counter != 3) {
-                std::cerr << "Error: the obj file is supposed to be triangulated" << std::endl;
+                std::cerr << "Error: the model file is supposed to be triangulated" << std::endl;
                 return;
             }
         }

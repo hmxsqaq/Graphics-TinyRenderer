@@ -1,12 +1,9 @@
 #include "renderer.h"
 
-std::ostream &operator<<(std::ostream &out, const Color &color) {
-    for (unsigned char i : color.bgra) out << (int)i << " ";
-    return out;
-}
-
 Renderer::Renderer(int width, int height, int bbp)
-    : width_(width), height_(height), bpp_(bbp), frame_buffer_(width * height * bbp) {
+    : width_(width), height_(height), bpp_(bbp),
+      frame_buffer_(width * height * bbp),
+      depth_buffer_(width * height, -std::numeric_limits<float>::max()) {
 }
 
 Color Renderer::get_pixel(const int x, const int y) const {
@@ -19,9 +16,11 @@ Color Renderer::get_pixel(const int x, const int y) const {
 }
 
 void Renderer::set_pixel(int x, int y, const Color &color) {
-    if (frame_buffer_.empty() || x < 0 || y < 0 || x >= width_ || y >= height_) return;
-
-    memcpy(frame_buffer_.data() + (x + y * width_) * bpp_, color.bgra, bpp_);
+    if (frame_buffer_.empty() || x < 0 || y < 0 || x >= width_ || y >= height_) {
+        std::cerr << "Set pixel fail: x " << x << " y " << y << "\n";
+        return;
+    }
+    std::copy(color.bgra.begin(), color.bgra.begin() + bpp_, frame_buffer_.begin() + (x + y * width_) * bpp_);
 }
 
 // Bresenham's line algorithm
@@ -88,7 +87,7 @@ void Renderer::draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, const Color
 }
 
 // triangle drawing with barycentric
-void Renderer::draw_triangle_barycentric(const Vec2 *t, const Color &color) {
+void Renderer::draw_triangle_barycentric(const Triangle &t, const Color &color) {
     // create bounding box
     int bbox_min[2] = {width_ - 1, height_ - 1};
     int bbox_max[2] = {0, 0};
@@ -107,7 +106,13 @@ void Renderer::draw_triangle_barycentric(const Vec2 *t, const Color &color) {
         for (int y = bbox_min[1]; y <= bbox_max[1]; ++y) {
             Vec3 bc = get_barycentric(t, {static_cast<double>(x), static_cast<double>(y)});
             if (bc.x >= 0 && bc.y >= 0 && bc.z >= 0) {
-                set_pixel(x, y, color);
+
+                auto depth = t[0][2] * bc[0] + t[1][2] * bc[1] + t[2][2] * bc[2];
+                if (depth_buffer_[x + y * width_] < depth)
+                {
+                    depth_buffer_[x + y * width_] = depth;
+                    set_pixel(x, y, color);
+                }
             }
         }
     }
@@ -132,10 +137,40 @@ void Renderer::flip_vertically() {
 }
 
 // get barycentric
-Vec3 Renderer::get_barycentric(const Vec2 *t, const Vec2 &p) {
-    Mat<3, 3> ABC = {{embed<3>(t[0]), embed<3>(t[1]), embed<3>(t[2])}};
-    if (std::abs(ABC.get_det()) < 1e-3) return {-1, 1, 1}; // degenerate check
-    return ABC.get_invert().get_transpose() * embed<3>(p);
+Vec3 Renderer::get_barycentric(const Triangle &t, const Vec2 &p) {
+    // calculate by Invert Matrix
+//    Mat<3, 3> ABC = { {
+//        resize<3>(t[0]),
+//        resize<3>(t[1]),
+//        resize<3>(t[2]) } };
+//    ABC.set_col(2, {1, 1, 1});
+//    if (std::abs(ABC.get_det()) < 1e-3) return {-1, 1, 1}; // degenerate check
+//    return ABC.get_invert().get_transpose() * resize<3>(p);
+
+    // calculate by area 1
+//    Vec2 A = resize<2>(t[0]);
+//    Vec2 B = resize<2>(t[1]);
+//    Vec2 C = resize<2>(t[2]);
+//    Vec2 AB = B - A;
+//    Vec2 AC = C - A;
+//    double area_ABC = cross(AB, AC);
+//    if (std::abs(area_ABC) < 1e-3) return {-1, 1, 1}; // degenerate check
+//    double area_PBC = cross(B - p, C - p);
+//    double area_PCA = cross(C - p, A - p);
+//    double u = area_PBC / area_ABC;
+//    double v = area_PCA / area_ABC;
+//    double w = 1.0 - u - v;
+//    return {u, v, w};
+
+    // calculate by area 2
+    auto x0 = t[0][0], y0 = t[0][1];
+    auto x1 = t[1][0], y1 = t[1][1];
+    auto x2 = t[2][0], y2 = t[2][1];
+    auto t_area = x0 * (y1 - y2) + x1 * (y2 - y0) + x2 * (y0 - y1);
+    if (std::abs(t_area) < 1e-3) return {-1, 1, 1}; // degenerate check
+    auto u = (p.x * (y1 - y2) + (x2 - x1) * p.y + x1 * y2 - x2 * y1) / t_area;
+    auto v = (p.x * (y2 - y0) + (x0 - x2) * p.y + x2 * y0 - x0 * y2) / t_area;
+    return {u, v, 1.0 - u - v};
 }
 
 // judge by cross product (like GAMES101)
