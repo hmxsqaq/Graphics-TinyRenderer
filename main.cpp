@@ -30,8 +30,6 @@ int main(int argc, char** argv) {
         }
         auto normal = cross(world_coords[2] - world_coords[0], world_coords[1] - world_coords[0]).normalize();
         auto intensity = normal * light_dir;
-        normal.norm();
-        normal.norm2();
         if (intensity > 0) {
             Color color { static_cast<uint8_t>(intensity * 255),
                           static_cast<uint8_t>(intensity * 255),

@@ -54,6 +54,5 @@ Renderer Model::load_texture(const std::string& filename, const std::string& suf
     std::string texture_file_name = filename.substr(0, dot) + suffix;
     Renderer renderer = TGAHandler::read_tga_file(texture_file_name);
     if (renderer.width() <= 0 || renderer.height() <= 0) return {};
-    std::cout << "loading texture file: " << texture_file_name << std::endl;
     return renderer;
 }

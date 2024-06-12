@@ -5,7 +5,7 @@ Renderer TGAHandler::read_tga_file(const std::string &filename) {
     std::ifstream in;
     in.open(filename, std::ios::binary);
     if (!in.is_open()) {
-        std::cerr << "Cannot open file: " << filename << "\n";
+        std::cerr << "read - cannot open file: " << filename << "\n";
         return {};
     }
 
@@ -13,7 +13,7 @@ Renderer TGAHandler::read_tga_file(const std::string &filename) {
     TGAHeader header;
     in.read(reinterpret_cast<char *>(&header), sizeof(header));
     if (!in.good()) {
-        std::cerr << "Cannot read the TGA header\n";
+        std::cerr << "read - cannot read the TGA header\n";
         return {};
     }
 
@@ -24,7 +24,7 @@ Renderer TGAHandler::read_tga_file(const std::string &filename) {
     if (width <= 0 || height <= 0 || (bpp != Renderer::GRAYSCALE &&
                                         bpp != Renderer::RGB &&
                                         bpp != Renderer::RGBA)) {
-        std::cerr << "Bad width/height/bpp value: width " << width << " height " << height << " bpp " << bpp << "\n";
+        std::cerr << "read - dad width/height/bpp value: width " << width << " height " << height << " bpp " << bpp << "\n";
         return {};
     }
 
@@ -34,16 +34,16 @@ Renderer TGAHandler::read_tga_file(const std::string &filename) {
     if (header.data_type_code == 3 || header.data_type_code == 2) {
         in.read(reinterpret_cast<char *>(renderer.frame_buffer().data()), (long long)width * height * bpp);
         if (!in.good()) {
-            std::cerr << "Cannot read frame data\n";
+            std::cerr << "read - cannot read frame data\n";
             return {};
         }
     } else if (header.data_type_code == 10 || header.data_type_code == 11) {
         if (!load_rle_data(in, renderer)) {
-            std::cerr << "Cannot load RLE data\n";
+            std::cerr << "read - cannot load RLE data\n";
             return {};
         }
     } else {
-        std::cerr << "Unknown file format " << (int)header.data_type_code << "\n";
+        std::cerr << "read - unknown file format " << (int)header.data_type_code << "\n";
         return {};
     }
 
@@ -65,7 +65,7 @@ bool TGAHandler::write_tga_file(const std::string &filename, const Renderer &ren
     std::ofstream out;
     out.open(filename, std::ios::binary);
     if (!out.is_open()) {
-        std::cerr << "TGAHandler::write_tga_file: cannot open file " << filename << "\n";
+        std::cerr << "write - cannot open file: " << filename << "\n";
         return false;
     }
 
@@ -85,7 +85,7 @@ bool TGAHandler::write_tga_file(const std::string &filename, const Renderer &ren
     // write header
     out.write(reinterpret_cast<const char *>(&header), sizeof(header));
     if (!out.good()) {
-        std::cerr << "TGAHandler::write_tga_file: cannot dump the tga file\n";
+        std::cerr << "write - cannot dump the tga file\n";
         return false;
     }
 
@@ -93,28 +93,28 @@ bool TGAHandler::write_tga_file(const std::string &filename, const Renderer &ren
     if (!rle) {
         out.write(reinterpret_cast<const char *>(data), width * height * bpp);
         if (!out.good()) {
-            std::cerr << "TGAHandler::write_tga_file: cannot unload raw frame_data\n";
+            std::cerr << "write - cannot unload raw frame_data\n";
             return false;
         }
     } else if (!unload_rle_data(out, renderer)) {
-        std::cerr << "TGAHandler::write_tga_file: cannot unload rle frame_data\n";
+        std::cerr << "write - cannot unload rle frame_data\n";
         return false;
     }
     out.write(reinterpret_cast<const char *>(developer_area_ref), sizeof(developer_area_ref));
     if (!out.good()) {
-        std::cerr << "TGAHandler::write_tga_file: cannot dump the tga file\n";
+        std::cerr << "write - cannot dump the tga file\n";
         return false;
     }
     out.write(reinterpret_cast<const char *>(extension_area_ref), sizeof(extension_area_ref));
     if (!out.good()) {
-        std::cerr << "TGAHandler::write_tga_file: cannot dump the tga file\n";
+        std::cerr << "write - cannot dump the tga file\n";
         return false;
     }
 
     // write footer
     out.write(reinterpret_cast<const char *>(footer), sizeof(footer));
     if (!out.good()) {
-        std::cerr << "TGAHandler::write_tga_file: cannot dump the tga file\n";
+        std::cerr << "write - cannot dump the tga file\n";
         return false;
     }
     return true;
@@ -135,7 +135,7 @@ bool TGAHandler::load_rle_data(std::ifstream &in, Renderer& renderer) {
         std::uint8_t chunk_header;
         chunk_header = in.get();
         if (!in.good()) {
-            std::cerr << "TGAHandler::load_rle_data: an error occurred while read the frame_data\n";
+            std::cerr << "rle - an error occurred while reading the frame_data\n";
             return false;
         }
         if (chunk_header < 128) {
@@ -143,14 +143,14 @@ bool TGAHandler::load_rle_data(std::ifstream &in, Renderer& renderer) {
             for (int i = 0; i < chunk_header; i++) {
                 in.read(reinterpret_cast<char *>(color_buffer.bgra.data()), bpp);
                 if (!in.good()) {
-                    std::cerr << "TGAHandler::load_rle_data: an error occurred while reading the header\n";
+                    std::cerr << "rle - an error occurred while reading the header\n";
                     return false;
                 }
                 for (int t = 0; t < bpp; t++)
                     frame_buffer[current_byte++] = color_buffer.bgra[t];
                 current_pixel++;
                 if (current_pixel > pixel_count) {
-                    std::cerr << "TGAHandler::load_rle_data: Too many pixels read\n";
+                    std::cerr << "rle - too many pixels were read\n";
                     return false;
                 }
             }
@@ -158,7 +158,7 @@ bool TGAHandler::load_rle_data(std::ifstream &in, Renderer& renderer) {
             chunk_header -= 127;
             in.read(reinterpret_cast<char *>(color_buffer.bgra.data()), bpp);
             if (!in.good()) {
-                std::cerr << "TGAHandler::load_rle_data: an error occurred while reading the header\n";
+                std::cerr << "rle - an error occurred while reading the header\n";
                 return false;
             }
             for (int i=0; i < chunk_header; i++) {
@@ -166,7 +166,7 @@ bool TGAHandler::load_rle_data(std::ifstream &in, Renderer& renderer) {
                     frame_buffer[current_byte++] = color_buffer.bgra[t];
                 current_pixel++;
                 if (current_pixel > pixel_count) {
-                    std::cerr << "TGAHandler::load_rle_data: Too many pixels read\n";
+                    std::cerr << "rle - too many pixels were read\n";
                     return false;
                 }
             }
@@ -209,12 +209,12 @@ bool TGAHandler::unload_rle_data(std::ofstream &out, const Renderer &renderer) {
         current_pixel += run_length;
         out.put(static_cast<char>(raw ? run_length - 1 : run_length + 127));
         if (!out.good()) {
-            std::cerr << "can't dump the tga file\n";
+            std::cerr << "rle - can't dump the tga file\n";
             return false;
         }
         out.write(reinterpret_cast<const char *>(data + chunk_start), (raw ? run_length * bpp : bpp));
         if (!out.good()) {
-            std::cerr << "can't dump the tga file\n";
+            std::cerr << "rle - can't dump the tga file\n";
             return false;
         }
     }
