@@ -108,6 +108,11 @@ constexpr Vec3 cross(const Vec3 &v1, const Vec3 &v2) noexcept {
                   v1.x * v2.y - v1.y * v2.x};
 }
 
+template<int N>
+constexpr Vec<N> interpolate(const Vec3 &bc, const Vec<N> &v1, const Vec<N> &v2, const Vec<N> &v3, double weight) {
+    return (bc.x * v1 + bc.y * v2 + bc.z * v3) / weight;
+}
+
 // Matrix
 template<int N> struct Det;
 
@@ -267,16 +272,20 @@ struct Triangle {
     std::array<Vec4, 3> vert{};
     std::array<Vec3, 3> normal{};
     std::array<Vec2, 3> tex_coords{};
-    std::array<Color, 3> color{};
+    std::array<Vec3, 3> color{};
 
     constexpr Vec4&        operator[](const int i)       noexcept { assert(i >= 0 && i < 3); return vert[i]; }
     constexpr const Vec4&  operator[](const int i) const noexcept { assert(i >= 0 && i < 3); return vert[i]; }
 
-    constexpr auto to_vec2() const noexcept {
-        return std::array<Vec2, 3> {
-            resize<2>(vert[0]),
-            resize<2>(vert[1]),
-            resize<2>(vert[2])};
+    constexpr void set_color(int index, double r, double g, double b) noexcept {
+        r = r < 0 ? 0 : r > 255 ? 255 : r;
+        g = g < 0 ? 0 : g > 255 ? 255 : g;
+        b = b < 0 ? 0 : b > 255 ? 255 : b;
+        color[index] = {r / 255.0, g / 255.0, b / 255.0};
+    }
+
+    constexpr void set_color(int index, const Color& new_color) noexcept {
+        color[index] = {new_color.R() / 255.0, new_color.G() / 255.0, new_color.B() / 255.0};
     }
 };
 

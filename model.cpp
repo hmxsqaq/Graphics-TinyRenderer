@@ -1,6 +1,7 @@
-#include <iostream>
+#include <fstream>
 #include <sstream>
 #include "model.h"
+#include "tga-handler.h"
 
 Model::Model(const std::string& filename) {
     std::ifstream in;

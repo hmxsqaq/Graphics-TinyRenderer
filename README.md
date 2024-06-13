@@ -17,7 +17,7 @@ Implement of Bresenham's line algorithm, which can draw a line from p0 to p1.
 
 ```c++
 // Bresenham's line algorithm
-void Renderer::draw_line(Vec2 p0, Vec2 p1, const Color &color) {
+void Renderer::draw_line(Vec2 p0, Vec2 p1, const Color &Color) {
     // if (dx < dy) the line is steep
     // we need to sample it along y axis
     // but we can also get_transpose it, then we can still use x axis
@@ -44,9 +44,9 @@ void Renderer::draw_line(Vec2 p0, Vec2 p1, const Color &color) {
     int y = y0;
     for (int x = x0; x <= p1.x; x++) {
         if (steep)
-            set_pixel(y, x, color); // if transposed, de−get_transpose
+            set_pixel(y, x, Color); // if transposed, de−get_transpose
         else
-            set_pixel(x, y, color);
+            set_pixel(x, y, Color);
 
         error += per_error;
         if (error > dx) {
@@ -67,7 +67,7 @@ A traditional way to draw a triangle, but it is an old-school approach designed 
 
 ```c++
 // line sweeping triangle drawing
-void Renderer::draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, const Color &color) {
+void Renderer::draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, const Color &Color) {
     if (p0.y == p1.y && p1.y == p2.y) return;
     // make p0.y < p1.y < p2.y
     if (p0.y > p1.y) std::swap(p0, p1);
@@ -84,7 +84,7 @@ void Renderer::draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, const Color
         Vec2 B = second_half ? p1 + (p2 - p1) * beta : p0 + (p1 - p0) * beta;
         if (A.x > B.x) std::swap(A, B);
         for (int x = static_cast<int>(A.x); x <= B.x; ++x) {
-            set_pixel(x, static_cast<int>(p0.y + y), color);
+            set_pixel(x, static_cast<int>(p0.y + y), Color);
         }
     }
 }
@@ -102,7 +102,7 @@ There are two ways to check whether a point belongs a 2D triangle.
 
 ```c++
 // get barycentric
-Vec3 Renderer::get_barycentric(const Vec2 *t, const Vec2 &p) {
+Vec3 Renderer::get_barycentric2D(const Vec2 *t, const Vec2 &p) {
     Mat<3, 3> ABC = {{embed<3>(t[0]), embed<3>(t[1]), embed<3>(t[2])}};
     if (std::abs(ABC.get_det()) < 1e-3) return {-1, 1, 1}; // degenerate check
     return ABC.get_invert().get_transpose() * embed<3>(p);
@@ -139,14 +139,14 @@ Then we can draw the triangle with the following steps.
 1. find the bounding box (accelerate the calculation)
 2. iterate all pixels in the bounding box
 3. judge whether the pixel is in the given triangle
-4. if not, continue; if yes, fill the pixel with the given color
+4. if not, continue; if yes, fill the pixel with the given Color
 
 *In this case, I use barycentric to check the point.
 If you want to use cross product, you just need to change the last if*
 
 ```c++
 // triangle drawing with barycentric
-void Renderer::draw_triangle_barycentric(const Vec2 *t, const Color &color) {
+void Renderer::draw_triangle(const Vec2 *t, const Color &Color) {
     // create bounding box
     int bbox_min[2] = {width_ - 1, height_ - 1};
     int bbox_max[2] = {0, 0};
@@ -163,9 +163,9 @@ void Renderer::draw_triangle_barycentric(const Vec2 *t, const Color &color) {
 
     for (int x = bbox_min[0]; x <= bbox_max[0]; ++x) {
         for (int y = bbox_min[1]; y <= bbox_max[1]; ++y) {
-            Vec3 bc = get_barycentric(t, {static_cast<double>(x), static_cast<double>(y)});
+            Vec3 bc = get_barycentric2D(t, {static_cast<double>(x), static_cast<double>(y)});
             if (bc.x >= 0 && bc.y >= 0 && bc.z >= 0) {
-                set_pixel(x, y, color);
+                set_pixel(x, y, Color);
             }
         }
     }
@@ -173,7 +173,7 @@ void Renderer::draw_triangle_barycentric(const Vec2 *t, const Color &color) {
 ```
 
 Actually, there are some problems with the fourth step.
-I am just simply fill all the pixels with the same given color, which is only able to render solid-colored triangles.
+I am just simply fill all the pixels with the same given Color, which is only able to render solid-colored triangles.
 
 We can use the interpolation or some other algorithm to create better img.
 I will implement it later.
@@ -182,7 +182,7 @@ I will implement it later.
 
 #### Random Shading
 
-Just give all triangle random color. A simple approach to testing.
+Just give all triangle random Color. A simple approach to testing.
 
 ```c++
 // Random Shading
@@ -193,7 +193,7 @@ for (int i = 0; i < model->n_faces(); ++i) {
         Vec3f word_coord = model->vert(face[j]);
         screen_coords[j] = Vec2i((int)((word_coord.x + 1.0f) * width / 2.0f), (int)((word_coord.y + 1.0f) * height / 2.0f));
     }
-    draw_triangle_barycentric(screen_coords, image, Color(rand() % 255, rand() % 255, rand() % 255, 255));
+    draw_triangle(screen_coords, image, Color(rand() % 255, rand() % 255, rand() % 255, 255));
 }
 ```
 
@@ -224,6 +224,6 @@ for (int i = 0; i < model->n_faces(); ++i) {
 
     float intensity = normal * light_dir;
     if (intensity > 0)
-        draw_triangle_barycentric(screen_coords, image, Color(intensity * 255, intensity * 255, intensity * 255, 255));
+        draw_triangle(screen_coords, image, Color(intensity * 255, intensity * 255, intensity * 255, 255));
 }
 ```

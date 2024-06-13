@@ -3,13 +3,16 @@
 Renderer::Renderer(int width, int height, int bbp)
     : width_(width), height_(height), bpp_(bbp),
       frame_buffer_(width * height * bbp),
-      depth_buffer_(width * height, -std::numeric_limits<float>::max()) {
+      depth_buffer_(width * height, std::numeric_limits<float>::max()) {
 }
 
 Color Renderer::get_pixel(const int x, const int y) const {
-    if (frame_buffer_.empty() || x < 0 || y < 0 || x >= width_ || y >= height_) return {};
+    if (frame_buffer_.empty() || x < 0 || y < 0 || x >= width_ || y >= height_) {
+        std::cerr << "get pixel fail: x " << x << " y " << y << "\n";
+        return {};
+    }
 
-    Color ret = {0, 0, 0, 0, bpp_};
+    Color ret = {0, 0, 0, 0};
     const std::uint8_t *pixel = frame_buffer_.data() + (x + y * width_) * bpp_;
     for (int i = 0; i < bpp_; i++) ret.bgra[i] = pixel[i];
     return ret;
@@ -17,7 +20,7 @@ Color Renderer::get_pixel(const int x, const int y) const {
 
 void Renderer::set_pixel(int x, int y, const Color &color) {
     if (frame_buffer_.empty() || x < 0 || y < 0 || x >= width_ || y >= height_) {
-        std::cerr << "Set pixel fail: x " << x << " y " << y << "\n";
+        std::cerr << "set pixel fail: x " << x << " y " << y << "\n";
         return;
     }
     std::copy(color.bgra.begin(), color.bgra.begin() + bpp_, frame_buffer_.begin() + (x + y * width_) * bpp_);
@@ -37,9 +40,7 @@ void Renderer::draw_line(Vec2 p0, Vec2 p1, const Color &color) {
         steep = true;
     }
     // make it left−to−right
-    if (p0.x > p1.x) {
-        std::swap(p0, p1);
-    }
+    if (p0.x > p1.x) std::swap(p0, p1);
 
     // use error to approximate the distance between the line and the pixel, which can improve performance
     int x0 = std::floor(p0.x), y0 = std::floor(p0.y);
@@ -87,7 +88,7 @@ void Renderer::draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, const Color
 }
 
 // triangle drawing with barycentric
-void Renderer::draw_triangle_barycentric(const Triangle &t, const Color &color) {
+void Renderer::draw_triangle(const Triangle &t, const std::array<Vec3, 3> &view_pos) {
     // create bounding box
     int bbox_min[2] = {width_ - 1, height_ - 1};
     int bbox_max[2] = {0, 0};
@@ -101,20 +102,81 @@ void Renderer::draw_triangle_barycentric(const Triangle &t, const Color &color) 
     bbox_min[1] = std::max(0, bbox_min[1]);
     bbox_max[0] = std::min(width_ - 1, bbox_max[0]);
     bbox_max[1] = std::min(height_ - 1, bbox_max[1]);
-
+#pragma omp parallel for // omp optimization (I hope so)
     for (int x = bbox_min[0]; x <= bbox_max[0]; ++x) {
         for (int y = bbox_min[1]; y <= bbox_max[1]; ++y) {
-            Vec3 bc = get_barycentric(t, {static_cast<double>(x), static_cast<double>(y)});
+            Vec3 bc = get_barycentric2D(t, {static_cast<double>(x), static_cast<double>(y)});
             if (bc.x >= 0 && bc.y >= 0 && bc.z >= 0) {
+                // inside triangle
+                double w_reciprocal = 1.0 / (bc.x / t[0][3] + bc.y / t[1][3] + bc.z / t[2][3]);
+                double depth = bc.x * t[0][2] / t[0][3] + bc.y * t[1][2] / t[1][3] + bc.z * t[2][2] / t[2][3];
+                depth *= w_reciprocal;
 
-                auto depth = t[0][2] * bc[0] + t[1][2] * bc[1] + t[2][2] * bc[2];
-                if (depth_buffer_[x + y * width_] < depth)
+                int depth_index = x + y * width_;
+                if (depth < depth_buffer_[depth_index]) // depth testing
                 {
-                    depth_buffer_[x + y * width_] = depth;
+                    auto interpolated_color = interpolate(bc, t.color[0], t.color[1], t.color[2], 1);
+                    auto interpolated_normal = interpolate(bc, t.normal[0], t.normal[1], t.normal[2], 1).normalize();
+                    auto interpolated_tex_coords = interpolate(bc, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1);
+                    auto interpolated_shading_coords = interpolate(bc, view_pos[0], view_pos[1], view_pos[2], 1);
+
+
+                    Color color;
+
                     set_pixel(x, y, color);
+                    depth_buffer_[depth_index] = depth;
                 }
             }
         }
+    }
+}
+
+void Renderer::draw_triangle_list(std::vector<Triangle *> &t_list) {
+    // depth range [0.1, 50]
+    double depth_min = 0.1, depth_max = 50.0;
+
+    Mat<4, 4> mvp_matrix = projection_mat_ * view_mat_ * model_mat_;
+    Mat<4, 4> mv_matrix = view_mat_ * model_mat_;
+    Mat<4, 4> normal_matrix = mv_matrix.get_invert().get_transpose();
+
+    for (const auto& t : t_list) {
+        Triangle transformed_t = *t;
+
+        std::array<Vec3, 3> view_space_vert {{  // vertices in view space
+            resize<3>(mv_matrix * t->vert[0]),
+            resize<3>(mv_matrix * t->vert[1]),
+            resize<3>(mv_matrix * t->vert[2]),
+        }};
+
+        std::array<Vec4, 3> clip_space_vert {{ // vertices in clip space
+            (mvp_matrix * t->vert[0]),
+            (mvp_matrix * t->vert[1]),
+            (mvp_matrix * t->vert[2])
+        }};
+        for (auto &v : clip_space_vert) // homogeneous division
+            v = v / v[3];
+
+        std::array<Vec4, 3> transformed_normal {{
+            normal_matrix * resize<4>(t->normal[0], 0.0),
+            normal_matrix * resize<4>(t->normal[1], 0.0),
+            normal_matrix * resize<4>(t->normal[2], 0.0)
+        }};
+
+        // viewport transformation
+        for (auto &v : clip_space_vert) {
+            v[0] = (v[0] + 1.0) * width_ / 2.0;
+            v[1] = (v[1] + 1.0) * height_ / 2.0;
+            v[2] = depth_min + (depth_max - depth_min) * (v[2] + 1.0) / 2.0;
+        }
+
+        // set transformed triangle
+        for (int i = 0; i < 3; ++i) {
+            transformed_t.vert[i] = clip_space_vert[i];
+            transformed_t.normal[i] = resize<3>(transformed_normal[i]);
+            transformed_t.set_color(i, 255, 255, 255);
+        }
+
+        draw_triangle(transformed_t, view_space_vert);
     }
 }
 
@@ -137,7 +199,7 @@ void Renderer::flip_vertically() {
 }
 
 // get barycentric
-Vec3 Renderer::get_barycentric(const Triangle &t, const Vec2 &p) {
+Vec3 Renderer::get_barycentric2D(const Triangle &t, const Vec2 &p) {
     // calculate by Invert Matrix
 //    Mat<3, 3> ABC = { {
 //        resize<3>(t[0]),
@@ -163,13 +225,13 @@ Vec3 Renderer::get_barycentric(const Triangle &t, const Vec2 &p) {
 //    return {u, v, w};
 
     // calculate by area 2
-    auto x0 = t[0][0], y0 = t[0][1];
-    auto x1 = t[1][0], y1 = t[1][1];
-    auto x2 = t[2][0], y2 = t[2][1];
-    auto t_area = x0 * (y1 - y2) + x1 * (y2 - y0) + x2 * (y0 - y1);
+    double x0 = t[0][0], y0 = t[0][1];
+    double x1 = t[1][0], y1 = t[1][1];
+    double x2 = t[2][0], y2 = t[2][1];
+    double t_area = x0 * (y1 - y2) + x1 * (y2 - y0) + x2 * (y0 - y1);
     if (std::abs(t_area) < 1e-3) return {-1, 1, 1}; // degenerate check
-    auto u = (p.x * (y1 - y2) + (x2 - x1) * p.y + x1 * y2 - x2 * y1) / t_area;
-    auto v = (p.x * (y2 - y0) + (x0 - x2) * p.y + x2 * y0 - x0 * y2) / t_area;
+    double u = (p.x * (y1 - y2) + (x2 - x1) * p.y + x1 * y2 - x2 * y1) / t_area;
+    double v = (p.x * (y2 - y0) + (x0 - x2) * p.y + x2 * y0 - x0 * y2) / t_area;
     return {u, v, 1.0 - u - v};
 }
 
@@ -185,4 +247,62 @@ bool Renderer::is_inside_triangle_cross_product(Vec2 *t, const Vec2 &P) {
     double z2 = cross(BC, BP);
     double z3 = cross(CA, CP);
     return (z1 > 0 && z2 > 0 && z3 >0) || (z1 < 0 && z2 < 0 && z3 < 0);
+}
+
+void Renderer::set_model_mat(double angle, double scale, Vec3 translate) {
+    angle = angle * M_PI / 180.0;
+    Mat<4, 4> rotation_mat({{{
+        {cos(angle), 0, sin(angle), 0},
+        {0, 1, 0, 0},
+        {-sin(angle), 0, cos(angle), 0},
+        {0, 0, 0, 1}
+    }}});
+
+    Mat<4, 4> scale_mat({{{
+        {scale, 0, 0, 0},
+        {0, scale, 0, 0},
+        {0, 0, scale, 0},
+        {0, 0, 0, 1}
+    }}});
+
+    Mat<4, 4> translate_mat({{{
+        {1, 0, 0, translate.x},
+        {0, 1, 0, translate.y},
+        {0, 0, 1, translate.z},
+        {0, 0, 0, 1}
+    }}});
+
+    model_mat_ = translate_mat * rotation_mat * scale_mat;
+}
+
+void Renderer::set_view_mat(const Vec3 &eye_point) {
+    view_mat_ = Mat<4, 4>({{{
+        {1, 0, 0, -eye_point.x},
+        {0, 1, 0, -eye_point.y},
+        {0, 0, 1, -eye_point.z},
+        {0, 0, 0, 1}
+    }}});;
+}
+
+void Renderer::set_projection_mat(double eye_fov, double aspect_ratio, double zNear, double zFar) {
+    Mat<4, 4> p2o({{{
+        {zNear, 0, 0, 0},
+        {0, zNear, 0, 0},
+        {0, 0, zNear + zFar, -zNear * zFar},
+        {0, 0, 1, 0}
+    }}});
+
+    double angle = eye_fov / 180.0 * M_PI;
+    double t = -tan(angle / 2) * zNear;
+    double b = -t;
+    double r = t * aspect_ratio;
+    double l = -r;
+    Mat<4, 4> o2c({{{
+        {2 / (r - l), 0, 0, -(r + l) / 2},
+        {0, 2 / (t - b), 0, -(t + b) / 2},
+        {0, 0, 2 / (zNear - zFar), -(zNear + zFar) / 2},
+        {0, 0, 0, 1}
+    }}});
+
+    projection_mat_ = o2c * p2o;
 }
