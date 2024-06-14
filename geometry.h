@@ -269,10 +269,11 @@ template<> struct Det<1> {
 };
 
 struct Triangle {
-    std::array<Vec4, 3> vert{};
-    std::array<Vec3, 3> normal{};
-    std::array<Vec2, 3> tex_coords{};
-    std::array<Vec3, 3> color{};
+    Mat<3, 4> vert{};
+    Mat<3, 3> normal{};
+    Mat<3, 2> tex_coords{};
+    Mat<3, 3> color{};
+    Mat<3, 3> view_vert{};
 
     constexpr Vec4&        operator[](const int i)       noexcept { assert(i >= 0 && i < 3); return vert[i]; }
     constexpr const Vec4&  operator[](const int i) const noexcept { assert(i >= 0 && i < 3); return vert[i]; }

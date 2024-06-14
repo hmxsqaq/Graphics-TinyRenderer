@@ -1,5 +1,3 @@
-#include <fstream>
-#include <sstream>
 #include "model.h"
 #include "tga-handler.h"
 

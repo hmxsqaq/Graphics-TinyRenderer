@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "shader.h"
 
 Renderer::Renderer(int width, int height, int bbp)
     : width_(width), height_(height), bpp_(bbp),
@@ -87,8 +88,59 @@ void Renderer::draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, const Color
     }
 }
 
+void Renderer::draw_triangle_list(const std::vector<Triangle *> &t_list, IShader &shader) {
+    // depth range [0.1, 50]
+    double depth_min = 0.1, depth_max = 50.0;
+
+    Mat<4, 4> mvp_matrix = projection_mat_ * view_mat_ * model_mat_;
+    Mat<4, 4> mv_matrix = view_mat_ * model_mat_;
+    Mat<4, 4> normal_matrix = mv_matrix.get_invert().get_transpose();
+
+    for (const auto& t : t_list) {
+        Triangle transformed_t = *t;
+
+        Mat<3, 3> view_space_vert {{  // vertices in view space
+            resize<3>(mv_matrix * t->vert[0]),
+            resize<3>(mv_matrix * t->vert[1]),
+            resize<3>(mv_matrix * t->vert[2]),
+        }};
+
+        Mat<3, 4> clip_space_vert {{ // vertices in clip space
+            (mvp_matrix * t->vert[0]),
+            (mvp_matrix * t->vert[1]),
+            (mvp_matrix * t->vert[2])
+        }};
+        for (int i = 0; i < 3; i++) // homogeneous division
+            clip_space_vert[i] = clip_space_vert[i] / clip_space_vert[i][3];
+
+        Mat<3, 4> transformed_normal {{
+            normal_matrix * resize<4>(t->normal[0], 0.0),
+            normal_matrix * resize<4>(t->normal[1], 0.0),
+            normal_matrix * resize<4>(t->normal[2], 0.0)
+        }};
+
+        // viewport transformation
+        for (int i = 0; i < 3; i++) {
+            clip_space_vert[i][0] = (clip_space_vert[i][0] + 1.0) * width_ / 2.0;
+            clip_space_vert[i][1] = (clip_space_vert[i][1] + 1.0) * height_ / 2.0;
+            clip_space_vert[i][2] = depth_min + (depth_max - depth_min) * (clip_space_vert[i][2] + 1.0) / 2.0;
+        }
+
+        // set transformed triangle
+        for (int i = 0; i < 3; ++i) {
+            transformed_t.vert[i] = clip_space_vert[i];
+            transformed_t.normal[i] = resize<3>(transformed_normal[i]);
+            transformed_t.set_color(i, 255, 255, 255);
+            transformed_t.view_vert[i] = view_space_vert[i];
+        }
+
+        shader.vertex(transformed_t);
+        draw_triangle(transformed_t, shader);
+    }
+}
+
 // triangle drawing with barycentric
-void Renderer::draw_triangle(const Triangle &t, const std::array<Vec3, 3> &view_pos) {
+void Renderer::draw_triangle(const Triangle &t, IShader &shader) {
     // create bounding box
     int bbox_min[2] = {width_ - 1, height_ - 1};
     int bbox_max[2] = {0, 0};
@@ -115,68 +167,13 @@ void Renderer::draw_triangle(const Triangle &t, const std::array<Vec3, 3> &view_
                 int depth_index = x + y * width_;
                 if (depth < depth_buffer_[depth_index]) // depth testing
                 {
-                    auto interpolated_color = interpolate(bc, t.color[0], t.color[1], t.color[2], 1);
-                    auto interpolated_normal = interpolate(bc, t.normal[0], t.normal[1], t.normal[2], 1).normalize();
-                    auto interpolated_tex_coords = interpolate(bc, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1);
-                    auto interpolated_shading_coords = interpolate(bc, view_pos[0], view_pos[1], view_pos[2], 1);
-
-
                     Color color;
-
+                    shader.fragment(t, color);
                     set_pixel(x, y, color);
                     depth_buffer_[depth_index] = depth;
                 }
             }
         }
-    }
-}
-
-void Renderer::draw_triangle_list(std::vector<Triangle *> &t_list) {
-    // depth range [0.1, 50]
-    double depth_min = 0.1, depth_max = 50.0;
-
-    Mat<4, 4> mvp_matrix = projection_mat_ * view_mat_ * model_mat_;
-    Mat<4, 4> mv_matrix = view_mat_ * model_mat_;
-    Mat<4, 4> normal_matrix = mv_matrix.get_invert().get_transpose();
-
-    for (const auto& t : t_list) {
-        Triangle transformed_t = *t;
-
-        std::array<Vec3, 3> view_space_vert {{  // vertices in view space
-            resize<3>(mv_matrix * t->vert[0]),
-            resize<3>(mv_matrix * t->vert[1]),
-            resize<3>(mv_matrix * t->vert[2]),
-        }};
-
-        std::array<Vec4, 3> clip_space_vert {{ // vertices in clip space
-            (mvp_matrix * t->vert[0]),
-            (mvp_matrix * t->vert[1]),
-            (mvp_matrix * t->vert[2])
-        }};
-        for (auto &v : clip_space_vert) // homogeneous division
-            v = v / v[3];
-
-        std::array<Vec4, 3> transformed_normal {{
-            normal_matrix * resize<4>(t->normal[0], 0.0),
-            normal_matrix * resize<4>(t->normal[1], 0.0),
-            normal_matrix * resize<4>(t->normal[2], 0.0)
-        }};
-
-        // viewport transformation
-        for (auto &v : clip_space_vert) {
-            v[0] = (v[0] + 1.0) * width_ / 2.0;
-            v[1] = (v[1] + 1.0) * height_ / 2.0;
-            v[2] = depth_min + (depth_max - depth_min) * (v[2] + 1.0) / 2.0;
-        }
-
-        // set transformed triangle
-        for (int i = 0; i < 3; ++i) {
-            transformed_t.vert[i] = clip_space_vert[i];
-            transformed_t.normal[i] = resize<3>(transformed_normal[i]);
-            transformed_t.set_color(i, 255, 255, 255);
-        }
-
-        draw_triangle(transformed_t, view_space_vert);
     }
 }
 

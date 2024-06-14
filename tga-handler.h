@@ -1,10 +1,10 @@
 #ifndef GRAPHICS_TINYRENDERER_TGA_HANDLER_H
 #define GRAPHICS_TINYRENDERER_TGA_HANDLER_H
 
-#include "renderer.h"
 #include <cstdint>
 #include <fstream>
 #include <vector>
+#include "renderer.h"
 
 // standard TGA header
 #pragma pack(push, 1)

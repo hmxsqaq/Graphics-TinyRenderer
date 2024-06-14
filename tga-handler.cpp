@@ -28,7 +28,7 @@ Renderer TGAHandler::read_tga_file(const std::string &filename) {
         return {};
     }
 
-    Renderer renderer{width, height, bpp};
+    Renderer renderer(width, height, bpp);
 
     // read frame_data
     if (header.data_type_code == 3 || header.data_type_code == 2) {

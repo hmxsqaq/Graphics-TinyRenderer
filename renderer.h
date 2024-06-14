@@ -5,13 +5,11 @@
 #include <array>
 #include <utility>
 #include <vector>
-#include <functional>
 #include <omp.h>
-#include "geometry.h"
 #include "color.h"
-#include "shader.h"
+#include "geometry.h"
 
-class Model;
+struct IShader;
 
 class Renderer {
 public:
@@ -24,8 +22,7 @@ public:
     void set_pixel(int x, int y, const Color &color);
     void draw_line(Vec2 p0, Vec2 p1, const Color &color);
     void draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, const Color &color);
-    void draw_triangle(const Triangle &t, const std::array<Vec3, 3> &view_pos);
-    void draw_triangle_list(std::vector<Triangle *> &t_list);
+    void draw_triangle_list(const std::vector<Triangle *> &t_list, IShader &shader);
 
     void set_model_mat(double angle, double scale, Vec3 translate);
     void set_view_mat(const Vec3& eye_point);
@@ -42,6 +39,8 @@ public:
     auto depth_data() const { return depth_buffer_.data(); }
     auto& depth_buffer() { return depth_buffer_; }
 private:
+    void draw_triangle(const Triangle &t, IShader &shader);
+
     static Vec3 get_barycentric2D(const Triangle &t, const Vec2& p);
     static bool is_inside_triangle_cross_product(Vec2 *t, const Vec2& P);
 
