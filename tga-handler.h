@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <fstream>
 #include <vector>
-#include "renderer.h"
+#include "texture.h"
 
 // standard TGA header
 #pragma pack(push, 1)
@@ -28,11 +28,11 @@ class TGAHandler {
 public:
     TGAHandler() = delete;
 
-    static Renderer read_tga_file(const std::string& filename);
-    static bool write_tga_file(const std::string& filename,const Renderer& renderer, bool v_flip = true, bool rle = true);
+    static Texture read_tga_file(const std::string& filename);
+    static bool write_tga_file(const std::string &filename, int width, int height, std::uint8_t bpp, const unsigned char *data, bool v_flip = true, bool rle = true);
 private:
-    static bool load_rle_data(std::ifstream &in, Renderer& renderer);
-    static bool unload_rle_data(std::ofstream &out, const Renderer& renderer);
+    static bool load_rle_data(std::ifstream &in, Texture &renderer);
+    static bool unload_rle_data(std::ofstream &out, int width, int height, std::uint8_t bpp, const unsigned char *data);
 };
 
 #endif //GRAPHICS_TINYRENDERER_TGA_HANDLER_H

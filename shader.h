@@ -23,7 +23,8 @@ struct Object {
     double scale;
 
     Object(const Model &model, const Vec3& position, double angle, double scale)
-            : triangle_list(model.n_faces()), position(position), angle(angle), scale(scale) {
+            : position(position), angle(angle), scale(scale) {
+        triangle_list.reserve(model.n_faces());
         for (int i_face = 0; i_face < model.n_faces(); ++i_face) {
             auto* t = new Triangle();
             for (int i_vert = 0; i_vert < 3; ++i_vert) {
@@ -70,10 +71,9 @@ protected:
 struct Shader : public IShader {
     Shader() = default;
     Shader(const Model *model, std::vector<Light>&& lights) : IShader(model, std::move(lights)) { }
-
-    bool fragment(const Triangle& t, Color& fragment_color) override {
-        return true;
-    }
+//    bool fragment(const Triangle& t, Color& fragment_color) override {
+//        return true;
+//    }
 };
 
 #endif //GRAPHICS_TINYRENDERER_SHADER_H

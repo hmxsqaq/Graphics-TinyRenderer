@@ -17,12 +17,13 @@ int main(int argc, char** argv) {
     Light l2 {{-20, 20, 0}, {500, 500, 500}};
     Shader shader(&model, std::vector<Light>({l1, l2}));
 
-    Renderer renderer(width, height, Renderer::RGB);
+    Renderer renderer(width, height, Color::RGB);
     renderer.set_model_mat(object.angle, object.scale, object.position);
     renderer.set_projection_mat(camera.fov, camera.aspect_ratio, camera.zNear, camera.zFar);
     renderer.set_view_mat(camera.position);
     renderer.draw_triangle_list(object.triangle_list, shader);
 
-    TGAHandler::write_tga_file(output_filename, renderer);
+    TGAHandler::write_tga_file(output_filename, renderer.width(), renderer.height(), renderer.bpp(), renderer.frame_data());
+
     return 0;
 }

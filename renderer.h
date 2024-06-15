@@ -8,13 +8,10 @@
 #include <omp.h>
 #include "color.h"
 #include "geometry.h"
-
-struct IShader;
+#include "shader.h"
 
 class Renderer {
 public:
-    enum ColorFormat { GRAYSCALE = 1, RGB = 3, RGBA = 4 };
-
     Renderer() = default;
     Renderer(int width, int height, int bbp);
 

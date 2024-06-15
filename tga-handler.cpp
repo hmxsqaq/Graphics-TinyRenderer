@@ -1,6 +1,6 @@
 #include "tga-handler.h"
 
-Renderer TGAHandler::read_tga_file(const std::string &filename) {
+Texture TGAHandler::read_tga_file(const std::string &filename) {
     // open file
     std::ifstream in;
     in.open(filename, std::ios::binary);
@@ -21,24 +21,24 @@ Renderer TGAHandler::read_tga_file(const std::string &filename) {
     auto width = header.width;
     auto height = header.height;
     auto bpp = header.bits_per_pixel >> 3; // /= 8
-    if (width <= 0 || height <= 0 || (bpp != Renderer::GRAYSCALE &&
-                                        bpp != Renderer::RGB &&
-                                        bpp != Renderer::RGBA)) {
+    if (width <= 0 || height <= 0 || (bpp != Color::GRAYSCALE &&
+                                        bpp != Color::RGB &&
+                                        bpp != Color::RGBA)) {
         std::cerr << "read - dad width/height/bpp value: width " << width << " height " << height << " bpp " << bpp << "\n";
         return {};
     }
 
-    Renderer renderer(width, height, bpp);
+    Texture texture(width, height, bpp);
 
     // read frame_data
     if (header.data_type_code == 3 || header.data_type_code == 2) {
-        in.read(reinterpret_cast<char *>(renderer.frame_buffer().data()), (long long)width * height * bpp);
+        in.read(reinterpret_cast<char *>(texture.data.data()), (long long)width * height * bpp);
         if (!in.good()) {
             std::cerr << "read - cannot read frame data\n";
             return {};
         }
     } else if (header.data_type_code == 10 || header.data_type_code == 11) {
-        if (!load_rle_data(in, renderer)) {
+        if (!load_rle_data(in, texture)) {
             std::cerr << "read - cannot load RLE data\n";
             return {};
         }
@@ -49,14 +49,18 @@ Renderer TGAHandler::read_tga_file(const std::string &filename) {
 
     // flip or not
     if (!(header.image_descriptor & 0x20))
-        renderer.flip_vertically();
+        texture.flip_vertically();
     if (header.image_descriptor & 0x10)
-        renderer.flip_horizontally();
-    std::cout << width << " x " << height << " / " << bpp * 8 << "\n";
-    return renderer;
+        texture.flip_horizontally();
+    return texture;
 }
 
-bool TGAHandler::write_tga_file(const std::string &filename, const Renderer &renderer, bool v_flip, bool rle) {
+bool TGAHandler::write_tga_file(const std::string &filename,
+                                const int width,
+                                const int height,
+                                const std::uint8_t bpp,
+                                const unsigned char *data,
+                                bool v_flip, bool rle) {
     constexpr std::uint8_t developer_area_ref[4] = {0, 0, 0, 0};
     constexpr std::uint8_t extension_area_ref[4] = {0, 0, 0, 0};
     constexpr std::uint8_t footer[18] = {'T','R','U','E','V','I','S','I','O','N','-','X','F','I','L','E','.','\0'};
@@ -69,10 +73,6 @@ bool TGAHandler::write_tga_file(const std::string &filename, const Renderer &ren
         return false;
     }
 
-    auto width = renderer.width();
-    auto height = renderer.height();
-    auto bpp = renderer.bpp();
-    auto data = renderer.frame_data();
     std::cout << "write - width " << width << " height " << height << " bpp " << (int)bpp << "\n";
 
     // prepare header
@@ -80,7 +80,7 @@ bool TGAHandler::write_tga_file(const std::string &filename, const Renderer &ren
     header.bits_per_pixel = bpp << 3; // = * 8
     header.width  = width;
     header.height = height;
-    header.data_type_code = (bpp == Renderer::GRAYSCALE ? (rle ? 11 : 3) : (rle ? 10 : 2));
+    header.data_type_code = (bpp == Color::GRAYSCALE ? (rle ? 11 : 3) : (rle ? 10 : 2));
     header.image_descriptor = v_flip ? 0x00 : 0x20; // top-left or bottom-left origin
 
     // write header
@@ -97,7 +97,7 @@ bool TGAHandler::write_tga_file(const std::string &filename, const Renderer &ren
             std::cerr << "write - cannot unload raw frame_data\n";
             return false;
         }
-    } else if (!unload_rle_data(out, renderer)) {
+    } else if (!unload_rle_data(out, width, height, bpp, data)) {
         std::cerr << "write - cannot unload rle frame_data\n";
         return false;
     }
@@ -122,11 +122,11 @@ bool TGAHandler::write_tga_file(const std::string &filename, const Renderer &ren
 }
 
 
-bool TGAHandler::load_rle_data(std::ifstream &in, Renderer& renderer) {
-    auto width = renderer.width();
-    auto height = renderer.height();
-    auto bpp = renderer.bpp();
-    auto frame_buffer = renderer.frame_buffer();
+bool TGAHandler::load_rle_data(std::ifstream &in, Texture &renderer) {
+    auto width = renderer.width;
+    auto height = renderer.height;
+    auto bpp = renderer.bpp;
+    auto data = renderer.data;
 
     size_t pixel_count = width * height;
     size_t current_pixel = 0;
@@ -148,7 +148,7 @@ bool TGAHandler::load_rle_data(std::ifstream &in, Renderer& renderer) {
                     return false;
                 }
                 for (int t = 0; t < bpp; t++)
-                    frame_buffer[current_byte++] = color_buffer.bgra[t];
+                    data[current_byte++] = color_buffer.bgra[t];
                 current_pixel++;
                 if (current_pixel > pixel_count) {
                     std::cerr << "rle - too many pixels were read\n";
@@ -164,7 +164,7 @@ bool TGAHandler::load_rle_data(std::ifstream &in, Renderer& renderer) {
             }
             for (int i=0; i < chunk_header; i++) {
                 for (int t = 0; t < bpp; t++)
-                    frame_buffer[current_byte++] = color_buffer.bgra[t];
+                    data[current_byte++] = color_buffer.bgra[t];
                 current_pixel++;
                 if (current_pixel > pixel_count) {
                     std::cerr << "rle - too many pixels were read\n";
@@ -178,12 +178,11 @@ bool TGAHandler::load_rle_data(std::ifstream &in, Renderer& renderer) {
 
 // Run-Length Encoding: compress the output
 // AAAAABBBCCDAA -> 5A3B2C1D2A
-bool TGAHandler::unload_rle_data(std::ofstream &out, const Renderer &renderer) {
-    auto bpp = renderer.bpp();
-    auto width = renderer.width();
-    auto height = renderer.height();
-    auto data = renderer.frame_data();
-
+bool TGAHandler::unload_rle_data(std::ofstream &out,
+                                 const int width,
+                                 const int height,
+                                 const std::uint8_t bpp,
+                                 const unsigned char *data) {
     const std::uint8_t max_chunk_length = 128;
     size_t n_pixels = width * height;
     size_t current_pixel = 0;

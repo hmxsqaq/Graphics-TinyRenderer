@@ -13,4 +13,5 @@ add_executable(Graphics_TinyRenderer main.cpp
         renderer.h
         color.h
         shader.h
+        texture.h
 )

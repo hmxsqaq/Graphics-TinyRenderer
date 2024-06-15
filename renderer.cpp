@@ -1,5 +1,4 @@
 #include "renderer.h"
-#include "shader.h"
 
 Renderer::Renderer(int width, int height, int bbp)
     : width_(width), height_(height), bpp_(bbp),
@@ -15,7 +14,7 @@ Color Renderer::get_pixel(const int x, const int y) const {
 
     Color ret = {0, 0, 0, 0};
     const std::uint8_t *pixel = frame_buffer_.data() + (x + y * width_) * bpp_;
-    for (int i = 0; i < bpp_; i++) ret.bgra[i] = pixel[i];
+    std::copy_n(pixel, bpp_, ret.bgra.begin());
     return ret;
 }
 
@@ -98,7 +97,6 @@ void Renderer::draw_triangle_list(const std::vector<Triangle *> &t_list, IShader
 
     for (const auto& t : t_list) {
         Triangle transformed_t = *t;
-
         Mat<3, 3> view_space_vert {{  // vertices in view space
             resize<3>(mv_matrix * t->vert[0]),
             resize<3>(mv_matrix * t->vert[1]),
@@ -111,7 +109,9 @@ void Renderer::draw_triangle_list(const std::vector<Triangle *> &t_list, IShader
             (mvp_matrix * t->vert[2])
         }};
         for (int i = 0; i < 3; i++) // homogeneous division
+        {
             clip_space_vert[i] = clip_space_vert[i] / clip_space_vert[i][3];
+        }
 
         Mat<3, 4> transformed_normal {{
             normal_matrix * resize<4>(t->normal[0], 0.0),
@@ -168,7 +168,7 @@ void Renderer::draw_triangle(const Triangle &t, IShader &shader) {
                 if (depth < depth_buffer_[depth_index]) // depth testing
                 {
                     Color color;
-                    shader.fragment(t, color);
+                    if (!shader.fragment(t, color)) continue;
                     set_pixel(x, y, color);
                     depth_buffer_[depth_index] = depth;
                 }

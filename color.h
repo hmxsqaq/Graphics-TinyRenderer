@@ -7,6 +7,8 @@
 #include <array>
 
 struct Color {
+    enum ColorFormat { GRAYSCALE = 1, RGB = 3, RGBA = 4 };
+
     std::array<std::uint8_t, 4> bgra = {0, 0, 0, 0}; // BLUE, GREEN, RED, alpha
     // std::uint8_t bpp = 4; // number of bytes per pixel, 3 for RGB, 4 for RGBA
     constexpr std::uint8_t& operator[](const int i) noexcept { assert(i >= 0 && i < 4); return bgra[i]; }
