@@ -21,9 +21,8 @@ public:
     void draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, const Color &color);
     void draw_triangle_list(const std::vector<Triangle *> &t_list, IShader &shader);
 
-    void set_model_mat(double angle, double scale, Vec3 translate);
-    void set_view_mat(const Vec3& eye_point);
-    void set_projection_mat(double eye_fov, double aspect_ratio, double zNear, double zFar);
+    void set_camera(const Camera &camera);
+    void set_object(const Object &object);
 
     void flip_horizontally();
     void flip_vertically();
@@ -36,6 +35,10 @@ public:
     auto depth_data() const { return depth_buffer_.data(); }
     auto& depth_buffer() { return depth_buffer_; }
 private:
+    void set_model_mat(double angle, double scale, Vec3 translate);
+    void set_view_mat(const Vec3& eye_point);
+    void set_projection_mat(double eye_fov, double aspect_ratio, double zNear, double zFar);
+
     void draw_triangle(const Triangle &t, IShader &shader);
 
     static Vec3 get_barycentric2D(const Triangle &t, const Vec2& p);

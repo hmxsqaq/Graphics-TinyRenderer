@@ -5,7 +5,7 @@ This is the final project for Computer Graphics course, a tiny software renderer
 My goal is to create a tiny and flexible renderer core that does not rely on any third-party libraries,
 which can be a good practice for learning computer graphics.
 
-## Architecture / API
+## Architecture
 
 [model.h](model.h) defines the `Model` class, which can read `.obj` model files and store the vertices and faces in it.
 
@@ -98,7 +98,7 @@ There are two ways to check whether a point belongs a 2D triangle.
 
 - Barycentric
 
-[Barycentric](https://en.wikipedia.org/wiki/Barycentric_coordinate_system) is truly an useful feature of triangle which can be used to interpolation. Here, we just use it to check a point.
+[Barycentric](https://en.wikipedia.org/wiki/Barycentric_coordinate_system) is truly a useful feature of triangle which can be used to interpolation. Here, we just use it to check a point.
 
 ```c++
 // get barycentric

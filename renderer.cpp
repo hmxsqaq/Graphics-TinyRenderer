@@ -303,3 +303,12 @@ void Renderer::set_projection_mat(double eye_fov, double aspect_ratio, double zN
 
     projection_mat_ = o2c * p2o;
 }
+
+void Renderer::set_object(const Object &object) {
+    set_model_mat(object.angle, object.scale, object.position);
+}
+
+void Renderer::set_camera(const Camera &camera) {
+    set_view_mat(camera.position);
+    set_projection_mat(camera.fov, camera.aspect_ratio, camera.zNear, camera.zFar);
+}
