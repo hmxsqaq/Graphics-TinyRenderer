@@ -50,12 +50,21 @@ struct Light {
 
 struct IShader {
     IShader() = default;
-    IShader(const Model *model, std::vector<Light>&& lights) : model_(model), lights_(std::move(lights)) { }
+    IShader(std::vector<Light>&& lights) : lights_(std::move(lights)) { }
 
     void add_light(Light light) { lights_.push_back(light); }
 
+    void set_model(const Model *model) { model_ = model; }
+
+    void unify_light(const Mat<4,4> model_mat) {
+        for (auto& light : lights_) {
+            light.position = resize<3>(model_mat * resize<4>(light.position, 0));
+            light.position.normalize();
+        }
+    }
+
     virtual void vertex(Triangle& t) { }
-    virtual bool fragment(const Triangle& t, Color& fragment_color) {
+    virtual bool fragment(const Vec3 &bc, Color& fragment_color) {
         // random shader as default
         fragment_color[0] = rand() % 256;
         fragment_color[1] = rand() % 256;
@@ -70,11 +79,38 @@ protected:
 
 struct Shader : public IShader {
     Shader() = default;
-    Shader(const Model *model, std::vector<Light>&& lights) : IShader(model, std::move(lights)) { }
+    Shader(std::vector<Light>&& lights) : IShader(std::move(lights)) { }
 
-//    bool fragment(const Triangle& t, Color& fragment_color) override {
-//        return true;
-//    }
+    void vertex(Triangle& t) override {
+        color_ = t.color;
+        normal_ = t.normal;
+        tex_coords_ = t.tex_coords;
+        view_vert_ = t.view_vert;
+    }
+
+    bool fragment(const Vec3 &bc, Color& fragment_color) override {
+        if (model_ == nullptr) {
+            std::cerr << "No model loaded" << std::endl;
+            return false;
+        }
+        if (model_->diffuse() == nullptr) {
+            std::cerr << "No texture loaded" << std::endl;
+            return false;
+        }
+
+        auto color = interpolate(bc, color_[0], color_[1], color_[2], 1);
+        auto normal = interpolate(bc, normal_[0], normal_[1], normal_[2], 1);
+        auto tex_coords = interpolate(bc, tex_coords_[0], tex_coords_[1], tex_coords_[2], 1);
+        auto view_vert = interpolate(bc, view_vert_[0], view_vert_[1], view_vert_[2], 1);
+        fragment_color = model_->diffuse()->get_color(tex_coords);
+        return true;
+    }
+
+protected:
+    Mat<3, 3> color_{};
+    Mat<3, 3> normal_{};
+    Mat<3, 2> tex_coords_{};
+    Mat<3, 3> view_vert_{};
 };
 
 #endif //GRAPHICS_TINYRENDERER_SHADER_H

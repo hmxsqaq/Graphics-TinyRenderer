@@ -12,8 +12,10 @@ class Model {
 public:
     explicit Model(const std::string& filename);
 
-    const Texture& diffuse()  const { return diffuse_map_;  }
-    const Texture& specular() const { return specular_map_; }
+    Texture& diffuse() { return diffuse_map_;  }
+    Texture& specular() { return specular_map_; }
+    const Texture* diffuse() const { return &diffuse_map_; }
+    const Texture* specular() const { return &specular_map_; }
     int n_verts() const { return static_cast<int>(verts_.size()); }
     int n_faces() const { return static_cast<int>(facet_vrt_.size() / 3); }
     Vec3 vert(const int i)                          const { return verts_[i]; }
@@ -21,7 +23,8 @@ public:
     Vec2 uv(const int i_face, const int i_vert)     const { return tex_coord_[facet_tex_[i_face * 3 + i_vert]]; }
     Vec3 normal(const int i_face, const int i_vert) const { return norms_[facet_nrm_[i_face * 3 + i_vert]]; }
     Vec3 normal(const Vec2 &uvf)                    const {
-        Color c = normal_map_.get_pixel(static_cast<int>(uvf[0]) * normal_map_.width, static_cast<int>(uvf[1]) * normal_map_.height);
+        Color c = normal_map_.get_color(static_cast<int>(uvf[0]) * normal_map_.width,
+                                        static_cast<int>(uvf[1]) * normal_map_.height);
         return Vec3{(double)c[2], (double)c[1], (double)c[0]} * 2.0 / 255.0 - Vec3{1, 1, 1};
     }
 private:

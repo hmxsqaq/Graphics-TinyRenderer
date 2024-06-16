@@ -163,32 +163,14 @@ void Renderer::draw_triangle(const Triangle &t, IShader &shader) {
                 depth *= w_reciprocal;
                 if (depth < depth_buffer_[x + y * width_]) // depth testing
                 {
-                    Color color {255, 255, 255, 255};
-                    if (!shader.fragment(t, color)) continue;
+                    Color color;
+                    if (!shader.fragment(bc, color)) continue;
                     set_pixel(x, y, color);
                     depth_buffer_[x + y * width_] = depth;
                 }
             }
         }
     }
-}
-
-void Renderer::flip_horizontally() {
-    int half = width_ >> 1;
-    for (int x = 0; x < half; ++x)
-        for (int y = 0; y < height_; ++y)
-            for (int b = 0; b < bpp_; ++b)
-                std::swap(frame_buffer_[(x + y * width_) * bpp_ + b],
-                          frame_buffer_[(width_ - 1 - x + y * width_) * bpp_ + b]);
-}
-
-void Renderer::flip_vertically() {
-    int half = height_ >> 1;
-    for (int x = 0; x < width_; ++x)
-        for (int y = 0; y < half; ++y)
-            for (int b = 0; b < bpp_; ++b)
-                std::swap(frame_buffer_[(x + y * width_) * bpp_ + b],
-                          frame_buffer_[(x + (height_ - 1 - y) * width_) * bpp_ + b]);
 }
 
 // get barycentric

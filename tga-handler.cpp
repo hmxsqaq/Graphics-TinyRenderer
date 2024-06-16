@@ -122,11 +122,10 @@ bool TGAHandler::write_tga_file(const std::string &filename,
 }
 
 
-bool TGAHandler::load_rle_data(std::ifstream &in, Texture &renderer) {
-    auto width = renderer.width;
-    auto height = renderer.height;
-    auto bpp = renderer.bpp;
-    auto data = renderer.data;
+bool TGAHandler::load_rle_data(std::ifstream &in, Texture &texture) {
+    auto width = texture.width;
+    auto height = texture.height;
+    auto bpp = texture.bpp;
 
     size_t pixel_count = width * height;
     size_t current_pixel = 0;
@@ -148,7 +147,7 @@ bool TGAHandler::load_rle_data(std::ifstream &in, Texture &renderer) {
                     return false;
                 }
                 for (int t = 0; t < bpp; t++)
-                    data[current_byte++] = color_buffer.bgra[t];
+                    texture.data[current_byte++] = color_buffer.bgra[t];
                 current_pixel++;
                 if (current_pixel > pixel_count) {
                     std::cerr << "rle - too many pixels were read\n";
@@ -164,7 +163,7 @@ bool TGAHandler::load_rle_data(std::ifstream &in, Texture &renderer) {
             }
             for (int i=0; i < chunk_header; i++) {
                 for (int t = 0; t < bpp; t++)
-                    data[current_byte++] = color_buffer.bgra[t];
+                    texture.data[current_byte++] = color_buffer.bgra[t];
                 current_pixel++;
                 if (current_pixel > pixel_count) {
                     std::cerr << "rle - too many pixels were read\n";

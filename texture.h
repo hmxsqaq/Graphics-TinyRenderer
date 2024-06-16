@@ -5,6 +5,7 @@
 #include <vector>
 #include "algorithm"
 #include "color.h"
+#include "geometry.h"
 
 struct Texture {
     int width = 0;
@@ -16,7 +17,7 @@ struct Texture {
     Texture(int _width, int _height, std::uint8_t _bpp)
         : width(_width), height(_height), bpp(_bpp), data(_width * _height * _bpp) {}
 
-    Color get_pixel(int x, int y) const {
+    Color get_color(int x, int y) const {
         if (data.empty() || x < 0 || y < 0 || x >= width || y >= height) {
             std::cerr << "get pixel fail: x " << x << " y " << y << "\n";
             return {};
@@ -26,6 +27,10 @@ struct Texture {
         const std::uint8_t *pixel = data.data() + (x + y * width) * bpp;
         std::copy_n(pixel, bpp, ret.bgra.begin());
         return ret;
+    }
+
+    Color get_color(const Vec2& uv) const {
+        return get_color((int)(uv[0] * width), (int)(uv[1] * height));
     }
 
     void flip_horizontally() {

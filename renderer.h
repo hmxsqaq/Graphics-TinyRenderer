@@ -24,9 +24,6 @@ public:
     void set_camera(const Camera &camera);
     void set_object(const Object &object);
 
-    void flip_horizontally();
-    void flip_vertically();
-
     int width() const { return width_; }
     int height() const { return height_; }
     std::uint8_t bpp() const { return bpp_; }
@@ -34,6 +31,10 @@ public:
     auto& frame_buffer() { return frame_buffer_; }
     auto depth_data() const { return depth_buffer_.data(); }
     auto& depth_buffer() { return depth_buffer_; }
+
+    const Mat<4, 4>& model_mat() const { return model_mat_; }
+    const Mat<4, 4>& view_mat() const { return view_mat_; }
+    const Mat<4, 4>& projection_mat() const { return projection_mat_; }
 private:
     void set_model_mat(double angle, double scale, Vec3 translate);
     void set_view_mat(const Vec3& eye_point);

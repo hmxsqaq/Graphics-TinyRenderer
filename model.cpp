@@ -41,16 +41,14 @@ Model::Model(const std::string& filename) {
             }
         }
     }
-    std::cout << "model     v-" << n_verts() << " f-"  << n_faces() << " vt-" << tex_coord_.size() << " vn-" << norms_.size() << "\n";
-
     diffuse_map_ = load_texture(filename, "_diffuse.tga");
-    std::cout << "diffuse   " << diffuse_map_.width << " x " << diffuse_map_.width << " / " << diffuse_map_.bpp * 8 << "\n";
-
     normal_map_ = load_texture(filename, "_nm_tangent.tga");
-    std::cout << "normal    " << normal_map_.width << " x " << normal_map_.width << " / " << normal_map_.bpp * 8 << "\n";
-
     specular_map_ = load_texture(filename, "_spec.tga");
+    std::cout << "model     v-" << n_verts() << " f-"  << n_faces() << " vt-" << tex_coord_.size() << " vn-" << norms_.size() << "\n";
+    std::cout << "diffuse   " << diffuse_map_.width << " x " << diffuse_map_.width << " / " << diffuse_map_.bpp * 8 << "\n";
+    std::cout << "normal    " << normal_map_.width << " x " << normal_map_.width << " / " << normal_map_.bpp * 8 << "\n";
     std::cout << "specular  " << specular_map_.width << " x " << specular_map_.width << " / " << specular_map_.bpp * 8 << "\n";
+    std::cout << filename << " load success\n\n";
 }
 
 Texture Model::load_texture(const std::string& filename, const std::string& suffix) {
