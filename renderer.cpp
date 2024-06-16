@@ -109,9 +109,7 @@ void Renderer::draw_triangle_list(const std::vector<Triangle *> &t_list, IShader
             (mvp_matrix * t->vert[2])
         }};
         for (int i = 0; i < 3; i++) // homogeneous division
-        {
             clip_space_vert[i] = clip_space_vert[i] / clip_space_vert[i][3];
-        }
 
         Mat<3, 4> transformed_normal {{
             normal_matrix * resize<4>(t->normal[0], 0.0),
@@ -163,14 +161,12 @@ void Renderer::draw_triangle(const Triangle &t, IShader &shader) {
                 double w_reciprocal = 1.0 / (bc.x / t[0][3] + bc.y / t[1][3] + bc.z / t[2][3]);
                 double depth = bc.x * t[0][2] / t[0][3] + bc.y * t[1][2] / t[1][3] + bc.z * t[2][2] / t[2][3];
                 depth *= w_reciprocal;
-
-                int depth_index = x + y * width_;
-                if (depth < depth_buffer_[depth_index]) // depth testing
+                if (depth < depth_buffer_[x + y * width_]) // depth testing
                 {
-                    Color color;
+                    Color color {255, 255, 255, 255};
                     if (!shader.fragment(t, color)) continue;
                     set_pixel(x, y, color);
-                    depth_buffer_[depth_index] = depth;
+                    depth_buffer_[x + y * width_] = depth;
                 }
             }
         }
@@ -290,14 +286,14 @@ void Renderer::set_projection_mat(double eye_fov, double aspect_ratio, double zN
     }}});
 
     double angle = eye_fov / 180.0 * M_PI;
-    double t = -tan(angle / 2) * zNear;
+    double t = tan(angle / 2) * zNear;
     double b = -t;
     double r = t * aspect_ratio;
     double l = -r;
     Mat<4, 4> o2c({{{
-        {2 / (r - l), 0, 0, -(r + l) / 2},
-        {0, 2 / (t - b), 0, -(t + b) / 2},
-        {0, 0, 2 / (zNear - zFar), -(zNear + zFar) / 2},
+        {2 / (r - l), 0, 0, -(r + l) / (r - l)},
+        {0, 2 / (t - b), 0, -(t + b) / (t - b)},
+        {0, 0, 2 / (zNear - zFar), -(zNear + zFar) / (zNear - zFar)},
         {0, 0, 0, 1}
     }}});
 

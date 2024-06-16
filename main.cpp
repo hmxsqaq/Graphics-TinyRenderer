@@ -29,6 +29,5 @@ int main(int argc, char** argv) {
                                renderer.bpp(),
                                renderer.frame_data());
 
-
     return 0;
 }

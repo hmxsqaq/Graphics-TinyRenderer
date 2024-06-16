@@ -29,7 +29,7 @@ public:
     TGAHandler() = delete;
 
     static Texture read_tga_file(const std::string& filename);
-    static bool write_tga_file(const std::string &filename, int width, int height, std::uint8_t bpp, const unsigned char *data, bool v_flip = true, bool rle = true);
+    static bool write_tga_file(const std::string &filename, int width, int height, std::uint8_t bpp, const unsigned char *data, bool v_flip = false, bool rle = true);
 private:
     static bool load_rle_data(std::ifstream &in, Texture &renderer);
     static bool unload_rle_data(std::ofstream &out, int width, int height, std::uint8_t bpp, const unsigned char *data);

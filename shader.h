@@ -71,6 +71,7 @@ protected:
 struct Shader : public IShader {
     Shader() = default;
     Shader(const Model *model, std::vector<Light>&& lights) : IShader(model, std::move(lights)) { }
+
 //    bool fragment(const Triangle& t, Color& fragment_color) override {
 //        return true;
 //    }
