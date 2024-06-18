@@ -5,20 +5,21 @@
 const int width  = 1024;
 const int height = 1024;
 Camera camera ({0.0, 0.0, 10.0}, 45.0, 1.0, 0.1, 1000.0);
-Light l1 {{1, 1, 1}, {500, 500, 500}};
-Light l2 {{-20, 20, 20}, {500, 500, 500}};
+Light light1 {{1, 1, 1},    {1, 1, 1}};
+Light light2 {{-1, -1, -1}, {1, 1, 1}};
 Vec3 amb_light_intensity{10, 10, 10};
 
 extern Mat<4, 4> ModelViewMatrix;
 extern Mat<4, 4> ProjectionMatrix;
 
-struct Shader : IShader {
+struct StandardVertexShader : IShader {
 public:
-    explicit Shader(const Model& model, std::vector<Light>&& lights = std::vector<Light>()) : model_(model), lights_(std::move(lights)) {
+    explicit StandardVertexShader(const Model& model, std::vector<Light>&& lights = std::vector<Light>())
+        : IShader(model, std::move(lights)) {
         for (auto& light : lights_) {
             // uniform light direction in view coordinates
-            light.position = resize<3>((ModelViewMatrix * resize<4>(light.position, 0))).normalize();
-            light.intensity = resize<3>((ModelViewMatrix * resize<4>(light.intensity, 0))).normalize();
+            light.direction = resize<3>((ModelViewMatrix * resize<4>(light.direction, 0))).normalize();
+            light.intensity = resize<3>((ModelViewMatrix * resize<4>(light.intensity, 0)));
         }
     }
 
@@ -35,21 +36,69 @@ public:
         ret_vert = ProjectionMatrix * ret_vert;
     }
 
-    bool fragment(const Vec3 &bc, Color &ret_color) override {
-        Vec3 bn = (varying_normal * bc).normalize();
-        for (const auto& light : lights_) {
-            double intensity = std::max(0.0, bn * light.position);
-            ret_color = Color{255, 255, 255, 255} * intensity;
-        }
-        return true;
-    }
-
 protected:
-    const Model& model_;
-    std::vector<Light> lights_;
     Mat<2, 3> varying_uv;
     Mat<3, 3> varying_normal;
     Mat<3, 3> t_vert_view_space;
+};
+struct GouraudShader : StandardVertexShader {
+    explicit GouraudShader(const Model& model, std::vector<Light>&& lights = std::vector<Light>())
+        : StandardVertexShader(model, std::move(lights)) { }
+
+    bool fragment(const Vec3 &bc, Color &ret_color) override {
+        Vec3 interpolated_normal = (varying_normal * bc).normalize();
+
+        double intensity = 0.0;
+        for (const auto& light : lights_) {
+            intensity += std::max(0.0, interpolated_normal * light.direction);
+        }
+        ret_color = Color{255, 255, 255, 255} * intensity;
+        return true;
+    }
+};
+struct StaticLayerValueShader : StandardVertexShader {
+    explicit StaticLayerValueShader(const Model& model, std::vector<Light>&& lights = std::vector<Light>())
+        : StandardVertexShader(model, std::move(lights)) { }
+
+    bool fragment(const Vec3 &bc, Color &ret_color) override {
+        Vec3 interpolated_normal = (varying_normal * bc).normalize();
+
+        double intensity = 0.0;
+        for (const auto& light : lights_) {
+            intensity += std::max(0.0, interpolated_normal * light.direction);
+        }
+        if (intensity > 0.85) intensity = 1;
+        else if (intensity > 0.60) intensity = 0.8;
+        else if (intensity > 0.45) intensity = 0.6;
+        else if (intensity > 0.30) intensity = 0.45;
+        else if (intensity > 0.15) intensity = 0.30;
+        else intensity = 0;
+        ret_color = Color{255, 255, 255, 255} * intensity;
+        return true;
+    }
+};
+struct SimpleTextureShader : StandardVertexShader {
+    explicit SimpleTextureShader(const Model& model, std::vector<Light>&& lights = std::vector<Light>())
+        : StandardVertexShader(model, std::move(lights)) { }
+
+    bool fragment(const Vec3 &bc, Color &ret_color) override {
+        Vec3 interpolated_normal = (varying_normal * bc).normalize();
+        Vec2 interpolated_uv = varying_uv * bc;
+
+        double intensity = 0.0;
+        for (const auto &light: lights_)
+            intensity += std::max(0.0, interpolated_normal * light.direction);
+        ret_color = model_.diffuse()->get_color(interpolated_uv) * intensity;
+        return true;
+    }
+};
+struct NormalMappingTextureShader : StandardVertexShader {
+    explicit NormalMappingTextureShader(const Model& model, std::vector<Light>&& lights = std::vector<Light>())
+            : StandardVertexShader(model, std::move(lights)) { }
+
+    bool fragment(const Vec3 &bc, Color &ret_color) override {
+        return true;
+    }
 };
 
 int main(int argc, char** argv) {
@@ -59,6 +108,7 @@ int main(int argc, char** argv) {
 //            R"(..\model\african_head\african_head_eye_outer.obj)",
     };
     std::string output_filename = "../image/output.tga";
+//    std::string output_filename = "../image/african_head_simple_texture_shader.tga";
 
     Renderer renderer(width, height, Color::RGB);
 
@@ -69,7 +119,11 @@ int main(int argc, char** argv) {
         set_model_mat(object.angle, object.scale, object.position);
         set_view_mat(camera.position);
         set_projection_mat(camera.fov, camera.aspect_ratio, camera.zNear, camera.zFar);
-        Shader shader(model, {l1});
+
+//        GouraudShader shader(model, {light1, light2});
+//        StaticLayerValueShader shader(model, {light1, light2});
+        SimpleTextureShader shader(model, {light1, light2});
+
         renderer.draw_object(object, shader);
     }
 

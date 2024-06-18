@@ -73,7 +73,7 @@ bool TGAHandler::write_tga_file(const std::string &filename,
         return false;
     }
 
-    std::cout << "write - width " << width << " height " << height << " bpp " << (int)bpp << "\n";
+    std::cout << "writing - width " << width << " height " << height << " bpp " << (int)bpp << "\n";
 
     // prepare header
     TGAHeader header = {};
@@ -118,6 +118,8 @@ bool TGAHandler::write_tga_file(const std::string &filename,
         std::cerr << "write - cannot dump the tga file\n";
         return false;
     }
+
+    std::cout << filename << " has been written successfully\n";
     return true;
 }
 

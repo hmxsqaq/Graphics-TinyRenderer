@@ -24,13 +24,22 @@ struct Object {
 };
 
 struct Light {
-    Vec3 position;
+    Vec3 direction;
     Vec3 intensity;
 };
 
 struct IShader {
+    explicit IShader(const Model &model, std::vector<Light>&& lights = std::vector<Light>())
+        : model_(model), lights_(std::move(lights)) {
+    }
+
+    virtual void start() { }
     virtual void vertex(int i_face, int nth_vert, Vec4 &ret_vert) = 0;
     virtual bool fragment(const Vec3 &bc, Color& ret_color) = 0;
+
+protected:
+    const Model& model_;
+    std::vector<Light> lights_;
 };
 
 #endif //GRAPHICS_TINYRENDERER_SHADER_H
