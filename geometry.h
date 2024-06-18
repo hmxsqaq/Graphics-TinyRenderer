@@ -145,7 +145,7 @@ struct Mat {
     }
 
     // get transpose matrix(转置矩阵)
-    constexpr Mat<COL, ROW> get_transpose() const noexcept {
+    constexpr Mat<COL, ROW> transpose() const noexcept {
         Mat<COL, ROW> ret;
         for (int i = 0; i < COL; i++)
             for (int j = 0; j < ROW; j++)
@@ -154,12 +154,12 @@ struct Mat {
     }
 
     // get determinant(行列式)
-    constexpr double get_det() const noexcept {
+    constexpr double det() const noexcept {
         return Det<COL>::det(*this);
     }
 
     // get minor matrix(代数余子式矩阵)
-    constexpr Mat<ROW - 1, COL - 1> get_minor(const int row, const int col) const noexcept {
+    constexpr Mat<ROW - 1, COL - 1> minor(const int row, const int col) const noexcept {
         Mat<ROW - 1, COL - 1> ret;
         for (int i = 0; i < ROW - 1; i++)
             for (int j = 0; j < COL - 1; j++)
@@ -168,25 +168,33 @@ struct Mat {
     }
 
     // get cofactor(代数余子式)
-    constexpr double get_cofactor(const int row, const int col) const noexcept {
-        return get_minor(row, col).get_det() * ((row + col) % 2 ? -1 : 1); // recursion
+    constexpr double cofactor(const int row, const int col) const noexcept {
+        return minor(row, col).det() * ((row + col) % 2 ? -1 : 1); // recursion
     }
 
     // get adjugate matrix(伴随矩阵)
-    constexpr Mat<COL, ROW> get_adjugate() const noexcept {
+    constexpr Mat<COL, ROW> adjugate_transpose() const noexcept {
         Mat<ROW, COL> ret;
         for (int i = 0; i < ROW; i++)
             for (int j = 0; j < COL; j++)
-                ret[i][j] = get_cofactor(i,j);
-        return ret.get_transpose();
+                ret[i][j] = cofactor(i, j);
+        return ret;
+    }
+
+    constexpr Mat<COL, ROW> adjugate() const noexcept {
+        return adjugate_transpose().transpose();
     }
 
     // get invert matrix
-    constexpr Mat<ROW, COL> get_invert() const {
-        Mat<ROW, COL> ret = get_adjugate();
-        double det = ret.get_col(0) * rows[0];
+    constexpr Mat<ROW, COL> invert_transpose() const {
+        Mat<ROW, COL> ret = adjugate_transpose();
+        double det = ret[0] * rows[0];
         assert(det != 0);
         return ret / det;
+    }
+
+    constexpr Mat<ROW, COL> invert() const {
+        return invert_transpose().transpose();
     }
 };
 
@@ -257,7 +265,7 @@ template<int N>
 struct Det {
     constexpr static double det(const Mat<N, N>& src) noexcept { // recursion
         double ret = 0;
-        for (int i = 0; i < N; i++) ret += src[0][i] * src.get_cofactor(0, i);
+        for (int i = 0; i < N; i++) ret += src[0][i] * src.cofactor(0, i);
         return ret;
     }
 };
@@ -268,31 +276,27 @@ template<> struct Det<1> {
     }
 };
 
-struct Triangle {
-    Mat<3, 4> vert{};
-    Mat<3, 3> normal{};
-    Mat<3, 2> tex_coords{};
-    Mat<3, 3> color{};
-    Mat<3, 3> view_vert{};
-
-    constexpr Vec4&        operator[](const int i)       noexcept { assert(i >= 0 && i < 3); return vert[i]; }
-    constexpr const Vec4&  operator[](const int i) const noexcept { assert(i >= 0 && i < 3); return vert[i]; }
-
-    constexpr void set_color(int index, double r, double g, double b) noexcept {
-        r = r < 0 ? 0 : r > 255 ? 255 : r;
-        g = g < 0 ? 0 : g > 255 ? 255 : g;
-        b = b < 0 ? 0 : b > 255 ? 255 : b;
-        color[index] = {r / 255.0, g / 255.0, b / 255.0};
-    }
-
-    constexpr void set_color(int index, const Color& new_color) noexcept {
-        color[index] = {new_color.R() / 255.0, new_color.G() / 255.0, new_color.B() / 255.0};
-    }
-};
-
-constexpr inline std::ostream& operator<<(std::ostream& out, const Triangle& t) noexcept {
-    for (int i = 0; i < 3; i++) out << t[i] << "\n";
-    return out;
-}
+//struct Triangle {
+//    Mat<3, 4> vert{};
+//    Mat<3, 3> normal{};
+//    Mat<3, 2> tex_coords{};
+//    Mat<3, 3> color{};
+//    Mat<3, 3> view_pos{};
+//
+//    constexpr Vec4&        operator[](const int i)       noexcept { assert(i >= 0 && i < 3); return vert[i]; }
+//    constexpr const Vec4&  operator[](const int i) const noexcept { assert(i >= 0 && i < 3); return vert[i]; }
+//
+//    constexpr void set_color(int index, double r, double g, double b) noexcept {
+//        r = r < 0 ? 0 : r > 255 ? 255 : r;
+//        g = g < 0 ? 0 : g > 255 ? 255 : g;
+//        b = b < 0 ? 0 : b > 255 ? 255 : b;
+//        color[index] = {r / 255.0, g / 255.0, b / 255.0};
+//    }
+//};
+//
+//constexpr inline std::ostream& operator<<(std::ostream& out, const Triangle& t) noexcept {
+//    for (int i = 0; i < 3; i++) out << t[i] << "\n";
+//    return out;
+//}
 
 #endif //GRAPHICS_TINYRENDERER_GEOMETRY_H

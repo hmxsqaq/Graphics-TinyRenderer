@@ -10,6 +10,11 @@
 #include "geometry.h"
 #include "shader.h"
 
+void set_model_mat(double angle, double scale, Vec3 translate);
+void set_view_mat(const Vec3& eye_point);
+void set_projection_mat(double fov, double aspect_ratio, double zNear, double zFar);
+void set_viewport_mat(int x, int y, int w, int h);
+
 class Renderer {
 public:
     Renderer() = default;
@@ -19,10 +24,10 @@ public:
     void set_pixel(int x, int y, const Color &color);
     void draw_line(Vec2 p0, Vec2 p1, const Color &color);
     void draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, const Color &color);
-    void draw_triangle_list(const std::vector<Triangle *> &t_list, IShader &shader);
+    void draw_object(const Object &object, IShader &shader);
 
-    void set_camera(const Camera &camera);
-    void set_object(const Object &object);
+    static void set_camera(const Camera &camera);
+    static void set_object(const Object &object);
 
     int width() const { return width_; }
     int height() const { return height_; }
@@ -31,18 +36,10 @@ public:
     auto& frame_buffer() { return frame_buffer_; }
     auto depth_data() const { return depth_buffer_.data(); }
     auto& depth_buffer() { return depth_buffer_; }
-
-    const Mat<4, 4>& model_mat() const { return model_mat_; }
-    const Mat<4, 4>& view_mat() const { return view_mat_; }
-    const Mat<4, 4>& projection_mat() const { return projection_mat_; }
 private:
-    void set_model_mat(double angle, double scale, Vec3 translate);
-    void set_view_mat(const Vec3& eye_point);
-    void set_projection_mat(double eye_fov, double aspect_ratio, double zNear, double zFar);
+    void draw_triangle(const Mat<3, 4> &t_vert_clip, IShader &shader);
 
-    void draw_triangle(const Triangle &t, IShader &shader);
-
-    static Vec3 get_barycentric2D(const Triangle &t, const Vec2& p);
+    static Vec3 get_barycentric2D(const std::array<Vec2, 3> &t_vert, const Vec2& p);
     static bool is_inside_triangle_cross_product(Vec2 *t, const Vec2& P);
 
     int width_ = 0;
@@ -50,10 +47,6 @@ private:
     std::uint8_t bpp_ = 0; // bits per pixel
     std::vector<std::uint8_t> frame_buffer_ = {};
     std::vector<double> depth_buffer_ = {};
-
-    Mat<4, 4> model_mat_ = {};
-    Mat<4, 4> view_mat_ = {};
-    Mat<4, 4> projection_mat_ = {};
 };
 
 #endif //GRAPHICS_TINYRENDERER_RENDERER_H

@@ -19,9 +19,9 @@ public:
     int n_verts() const { return static_cast<int>(verts_.size()); }
     int n_faces() const { return static_cast<int>(facet_vrt_.size() / 3); }
     Vec3 vert(const int i)                          const { return verts_[i]; }
-    Vec3 vert(const int i_face, const int i_vert)   const { return verts_[facet_vrt_[i_face * 3 + i_vert]]; }
-    Vec2 uv(const int i_face, const int i_vert)     const { return tex_coord_[facet_tex_[i_face * 3 + i_vert]]; }
-    Vec3 normal(const int i_face, const int i_vert) const { return norms_[facet_nrm_[i_face * 3 + i_vert]]; }
+    Vec3 vert(const int i_face, const int nth_vert)   const { return verts_[facet_vrt_[i_face * 3 + nth_vert]]; }
+    Vec2 uv(const int i_face, const int nth_vert)     const { return tex_coord_[facet_tex_[i_face * 3 + nth_vert]]; }
+    Vec3 normal(const int i_face, const int nth_vert) const { return norms_[facet_nrm_[i_face * 3 + nth_vert]]; }
     Vec3 normal(const Vec2 &uvf)                    const {
         Color c = normal_map_.get_color(static_cast<int>(uvf[0]) * normal_map_.width,
                                         static_cast<int>(uvf[1]) * normal_map_.height);

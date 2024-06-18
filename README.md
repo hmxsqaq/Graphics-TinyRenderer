@@ -20,11 +20,11 @@ Implement of Bresenham's line algorithm, which can draw a line from p0 to p1.
 void Renderer::draw_line(Vec2 p0, Vec2 p1, const Color &Color) {
     // if (dx < dy) the line is steep
     // we need to sample it along y axis
-    // but we can also get_transpose it, then we can still use x axis
-    // just remember to re-get_transpose it when drawing it
+    // but we can also transpose it, then we can still use x axis
+    // just remember to re-transpose it when drawing it
     bool steep = false;
     if (std::abs(p0.x - p1.x) < std::abs(p0.y - p1.y)) {
-        // get_transpose
+        // transpose
         std::swap(p0.x, p0.y);
         std::swap(p1.x, p1.y);
         steep = true;
@@ -44,7 +44,7 @@ void Renderer::draw_line(Vec2 p0, Vec2 p1, const Color &Color) {
     int y = y0;
     for (int x = x0; x <= p1.x; x++) {
         if (steep)
-            set_pixel(y, x, Color); // if transposed, de−get_transpose
+            set_pixel(y, x, Color); // if transposed, de−transpose
         else
             set_pixel(x, y, Color);
 
@@ -104,8 +104,8 @@ There are two ways to check whether a point belongs a 2D triangle.
 // get barycentric
 Vec3 Renderer::get_barycentric2D(const Vec2 *t, const Vec2 &p) {
     Mat<3, 3> ABC = {{embed<3>(t[0]), embed<3>(t[1]), embed<3>(t[2])}};
-    if (std::abs(ABC.get_det()) < 1e-3) return {-1, 1, 1}; // degenerate check
-    return ABC.get_invert().get_transpose() * embed<3>(p);
+    if (std::abs(ABC.det()) < 1e-3) return {-1, 1, 1}; // degenerate check
+    return ABC.invert().transpose() * embed<3>(p);
 }
 ```
 

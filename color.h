@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cassert>
 #include <array>
+#include "geometry.h"
 
 struct Color {
     enum ColorFormat { GRAYSCALE = 1, RGB = 3, RGBA = 4 };
@@ -17,6 +18,7 @@ struct Color {
     constexpr std::uint8_t G() const noexcept { return bgra[1]; }
     constexpr std::uint8_t B() const noexcept { return bgra[0]; }
     constexpr std::uint8_t A() const noexcept { return bgra[3]; }
+    constexpr Vec3 to_vec3() const noexcept { return { R() / 255.0, G() / 255.0, B() / 255.0 }; }
 };
 
 inline std::ostream& operator<<(std::ostream &out, const Color &color) {
