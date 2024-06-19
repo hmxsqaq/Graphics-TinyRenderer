@@ -3,13 +3,15 @@
 [中文版](doc/README_CN.md)
 
 > You can see the output images [here](image)
+> 
+> *As GitHub do not support `.tga` image, you may need to download it to see the effect*
 
 This is the final project for Computer Graphics course, a tiny software renderer based on [tinyrenderer](https://github.com/ssloy/tinyrenderer/wiki).
 
 My goal is to create a tiny and flexible renderer core that does not rely on any third-party libraries,
 which can be a good practice for learning computer graphics.
 
-![sample](image/african_head_tangent_shader.tga)
+![sample](doc/sample.png)
 
 ## Features
 
