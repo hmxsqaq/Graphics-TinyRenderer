@@ -123,7 +123,7 @@ struct Mat {
     constexpr Vec<COL>&       operator[](const int i)       noexcept { assert(i >= 0 && i < ROW); return rows[i]; }
     constexpr const Vec<COL>& operator[](const int i) const noexcept { assert(i >= 0 && i < ROW); return rows[i]; }
 
-    constexpr Vec<ROW> get_col(const int idx) const noexcept {
+    constexpr Vec<ROW> col(const int idx) const noexcept {
         assert(idx >= 0 && idx < COL);
         Vec<ROW> ret;
         for (int i = 0; i < ROW; i++) ret[i] = rows[i][idx];
@@ -225,7 +225,7 @@ constexpr Mat<ROW, COL> operator*(const Mat<ROW, MID>& mat1, const Mat<MID, COL>
     Mat<ROW, COL> ret;
     for (int i = 0; i < ROW; ++i)
         for (int j = 0; j < COL; ++j)
-            ret[i][j] = mat1[i] * mat2.get_col(j);
+            ret[i][j] = mat1[i] * mat2.col(j);
     return ret;
 }
 

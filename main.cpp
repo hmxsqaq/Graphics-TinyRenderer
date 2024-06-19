@@ -5,9 +5,12 @@
 const int width  = 1024;
 const int height = 1024;
 Camera camera ({0.0, 0.0, 10.0}, 45.0, 1.0, 0.1, 1000.0);
+//constexpr Vec3       eye{1,1,3}; // camera position
+//constexpr Vec3    center{0,0,0}; // camera direction
+//constexpr Vec3        up{0,1,0}; // camera up vector
 Light light1 {{1, 1, 1},    {1, 1, 1}};
 Light light2 {{-1, -1, -1}, {1, 1, 1}};
-Vec3 amb_light_intensity{10, 10, 10};
+Vec3 amb_light_intensity = {5};
 
 extern Mat<4, 4> ModelViewMatrix;
 extern Mat<4, 4> ProjectionMatrix;
@@ -27,7 +30,7 @@ public:
         // column-major order, which is convenient for fragment shader
         varying_uv.set_col(nth_vert, model_.uv(i_face, nth_vert));
         varying_normal.set_col(nth_vert,
-                               resize<3>( ModelViewMatrix.invert_transpose() * resize<4>(model_.normal(i_face, nth_vert), 0) ));
+                               resize<3>( (ModelViewMatrix).invert_transpose() * resize<4>(model_.normal(i_face, nth_vert), 0) ));
         // model space -> world space -> view space
         ret_vert = ModelViewMatrix * resize<4>(model_.vert(i_face, nth_vert), 1);
         // store the vertex in view space for the fragment shader
@@ -77,8 +80,8 @@ struct StaticLayerValueShader : StandardVertexShader {
         return true;
     }
 };
-struct SimpleTextureShader : StandardVertexShader {
-    explicit SimpleTextureShader(const Model& model, std::vector<Light>&& lights = std::vector<Light>())
+struct PhongShader : StandardVertexShader {
+    explicit PhongShader(const Model& model, std::vector<Light>&& lights = std::vector<Light>())
         : StandardVertexShader(model, std::move(lights)) { }
 
     bool fragment(const Vec3 &bc, Color &ret_color) override {
@@ -86,44 +89,80 @@ struct SimpleTextureShader : StandardVertexShader {
         Vec2 interpolated_uv = varying_uv * bc;
 
         double intensity = 0.0;
-        for (const auto &light: lights_)
-            intensity += std::max(0.0, interpolated_normal * light.direction);
-        ret_color = model_.diffuse()->get_color(interpolated_uv) * intensity;
+        for (const auto &light: lights_) {
+            double diffuse = std::max(0.0, interpolated_normal * light.direction);
+            Vec3 reflected_light = (interpolated_normal * (interpolated_normal * light.direction) * 2 - light.direction).normalize();
+            double specular = std::pow(std::max(0.0, -reflected_light.z), model_.specular()->get_color(interpolated_uv)[0] + 5);
+            intensity += diffuse + specular;
+        }
+        Color fragment_color = model_.diffuse()->get_color(interpolated_uv);
+        for (int i : {0, 1, 2}) {
+            ret_color[i] = std::min<int>((int)(fragment_color[i] * intensity), 255);
+        }
         return true;
     }
 };
-struct NormalMappingTextureShader : StandardVertexShader {
-    explicit NormalMappingTextureShader(const Model& model, std::vector<Light>&& lights = std::vector<Light>())
+struct TangentShader : StandardVertexShader {
+    explicit TangentShader(const Model& model, std::vector<Light>&& lights = std::vector<Light>())
             : StandardVertexShader(model, std::move(lights)) { }
 
     bool fragment(const Vec3 &bc, Color &ret_color) override {
+        Vec3 interpolated_normal = (varying_normal * bc).normalize();
+        Vec2 interpolated_uv = varying_uv * bc;
+
+        Mat<3, 3> AI = Mat<3, 3>{{
+            t_vert_view_space.col(1) - t_vert_view_space.col(0),
+            t_vert_view_space.col(2) - t_vert_view_space.col(0),
+            interpolated_normal
+        }}.invert();
+        Vec3 tangent = AI * Vec3{
+            varying_uv[0][1] - varying_uv[0][0],
+            varying_uv[0][2] - varying_uv[0][0],
+            0};
+        Vec3 bitangent = AI * Vec3{
+            varying_uv[1][1] - varying_uv[1][0],
+            varying_uv[1][2] - varying_uv[1][0],
+            0};
+        Mat<3, 3> TBN = Mat<3, 3>{{
+            tangent.normalize(),
+            bitangent.normalize(),
+            interpolated_normal
+        }}.transpose();
+        Vec3 mapping_normal = (TBN * model_.normal(interpolated_uv)).normalize();
+        double intensity = 0.0;
+        for (const auto &light: lights_) {
+            double diffuse = std::max(0.0, mapping_normal * light.direction);
+            Vec3 reflected_light = (mapping_normal * (mapping_normal * light.direction) * 2 - light.direction).normalize();
+            double specular = std::pow(std::max(-reflected_light.z, 0.0), model_.specular()->get_color(interpolated_uv)[0] + 5);
+            intensity += diffuse + specular;
+        }
+        Color fragment_color = model_.diffuse()->get_color(interpolated_uv);
+        for (int i : {0, 1, 2}) {
+            ret_color[i] = std::min((int)(fragment_color[i] * intensity + amb_light_intensity[i]), 255);
+        }
         return true;
     }
 };
+
 
 int main(int argc, char** argv) {
     std::vector<std::string> model_paths = {
             R"(..\model\african_head\african_head.obj)",
             R"(..\model\african_head\african_head_eye_inner.obj)",
-//            R"(..\model\african_head\african_head_eye_outer.obj)",
+//            R"(..\model\diablo3_pose\diablo3_pose.obj)",
     };
-    std::string output_filename = "../image/output.tga";
-//    std::string output_filename = "../image/african_head_simple_texture_shader.tga";
+    std::string output_filename = "../image/african_head_tangent_shader.tga";
 
     Renderer renderer(width, height, Color::RGB);
 
     for (const auto& model_path : model_paths)
     {
         Model model = Model(model_path);
-        Object object(model, {0.0, 0.0, 0.0}, 0, 3);
+        Object object(model, {0.0, 0.0, 0.0}, -45, 3);
         set_model_mat(object.angle, object.scale, object.position);
         set_view_mat(camera.position);
         set_projection_mat(camera.fov, camera.aspect_ratio, camera.zNear, camera.zFar);
-
-//        GouraudShader shader(model, {light1, light2});
-//        StaticLayerValueShader shader(model, {light1, light2});
-        SimpleTextureShader shader(model, {light1, light2});
-
+        TangentShader shader(model, {light1, light2});
         renderer.draw_object(object, shader);
     }
 

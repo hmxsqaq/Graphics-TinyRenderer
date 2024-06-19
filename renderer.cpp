@@ -75,7 +75,7 @@ void set_viewport_mat(int x, int y, int w, int h) {
 
 Renderer::Renderer(int width, int height, int bbp)
     : width_(width), height_(height), bpp_(bbp),
-      frame_buffer_(width * height * bbp),
+      frame_buffer_(width * height * bbp, 0),
       depth_buffer_(width * height, std::numeric_limits<float>::max()) {
 }
 
@@ -162,7 +162,7 @@ void Renderer::draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, const Color
 }
 
 void Renderer::draw_object(const Object &object, IShader &shader) {
-    set_viewport_mat(0, 0, width_, height_);
+    set_viewport_mat(width_ / 8, height_ / 8, width_ * 3 / 4, height_ * 3 / 4);
     shader.start();
     for (int i_face = 0; i_face < object.model.n_faces(); i_face++) {
         Mat<3, 4> t_vert_clip = {0};
@@ -228,6 +228,9 @@ Vec3 Renderer::get_barycentric2D(const std::array<Vec2, 3> &t_vert, const Vec2 &
     double u = (p.x * (y1 - y2) + (x2 - x1) * p.y + x1 * y2 - x2 * y1) / t_area;
     double v = (p.x * (y2 - y0) + (x0 - x2) * p.y + x2 * y0 - x0 * y2) / t_area;
     return {u, v, 1.0 - u - v};
+//    Mat<3,3> ABC = {{resize<3>(t_vert[0]), resize<3>(t_vert[1]), resize<3>(t_vert[2])}};
+//    if (ABC.det()<1e-3) return {-1,1,1}; //degenerate triangle
+//    return ABC.invert_transpose() * resize<3>(p);
 }
 
 // judge by cross product (like GAMES101)

@@ -59,3 +59,9 @@ Texture Model::load_texture(const std::string& filename, const std::string& suff
     if (texture.width <= 0 || texture.height <= 0) return {};
     return texture;
 }
+
+Vec3 Model::normal(const Vec2 &uvf) const {
+    Color c = normal_map_.get_color(static_cast<int>(uvf[0] * normal_map_.width),
+                                    static_cast<int>(uvf[1] * normal_map_.height));
+    return Vec3{(double)c[2], (double)c[1], (double)c[0]} * 2.0 / 255.0 - Vec3{1, 1, 1};
+}
