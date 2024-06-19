@@ -26,9 +26,6 @@ public:
     void draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, const Color &color);
     void draw_object(const Object &object, IShader &shader);
 
-    static void set_camera(const Camera &camera);
-    static void set_object(const Object &object);
-
     int width() const { return width_; }
     int height() const { return height_; }
     std::uint8_t bpp() const { return bpp_; }

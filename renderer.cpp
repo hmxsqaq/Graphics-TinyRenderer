@@ -246,12 +246,3 @@ bool Renderer::is_inside_triangle_cross_product(Vec2 *t, const Vec2 &P) {
     double z3 = cross(CA, CP);
     return (z1 > 0 && z2 > 0 && z3 >0) || (z1 < 0 && z2 < 0 && z3 < 0);
 }
-
-void Renderer::set_object(const Object &object) {
-    set_model_mat(object.angle, object.scale, object.position);
-}
-
-void Renderer::set_camera(const Camera &camera) {
-    set_view_mat(camera.position);
-    set_projection_mat(camera.fov, camera.aspect_ratio, camera.zNear, camera.zFar);
-}

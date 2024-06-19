@@ -1,0 +1,79 @@
+@startuml
+
+!theme toy
+skinparam defaultFontName "LXGW WenKai Screen"
+
+class Texture{
+    + width : int
+    + height : int
+    + bpp : uint8_t
+    - data : vector<uint8_t>
+    + get_color(Vec2 uv)
+}
+
+class Model {
+    + data...
+    + Texture diffuse_map
+    + Texture normal_map
+    + Texture specular_map
+}
+
+struct Object {
+    + model : Model
+    + position : Vec3
+    + rotation : Vec3
+    + scale : Vec3
+}
+
+class Renderer {
+    + width : int
+    + height : int
+    + bpp : uint8_t
+    - frame_buffer : vector<uint8_t>
+    - z_buffer : vector<double>
+
+    + draw_line(p0, p1, color)
+    + draw_object(object, shader)
+    - set_pixel(x, y, color)
+    - draw_triangle(triangle, shader)
+}
+
+class TGAHandler {
+    {static} + read_tga_file(...)
+    {static} + write_tga_file(...)
+    {static} - read_rle_data(...)
+    {static} - write_rle_data(...)
+}
+
+interface IShader {
+    # model : Model
+    # lights : vector<Light>
+    + vertex(...)
+    + fragment(...)
+}
+
+struct GouraudShader {
+    + vertex(...)
+    + fragment(...)
+}
+
+struct PhongShader {
+    + vertex(...)
+    + fragment(...)
+}
+
+struct OtherShader {
+    + vertex(...)
+    + fragment(...)
+}
+
+IShader <|-- GouraudShader
+IShader <|-- PhongShader
+IShader <|-- OtherShader
+Model o-- Texture
+Object o-- Model
+Renderer ..> IShader
+Renderer ..> Object
+IShader --> Model
+
+@enduml

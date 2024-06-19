@@ -1,9 +1,0 @@
-@startuml
-
-class Model
-
-class Renderer
-
-class TGAHandler
-
-@enduml

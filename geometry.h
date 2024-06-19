@@ -5,7 +5,6 @@
 #include <cassert>
 #include <iostream>
 #include <array>
-#include "color.h"
 
 // Vector
 template<int N>
