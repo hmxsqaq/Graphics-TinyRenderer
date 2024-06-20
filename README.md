@@ -6,7 +6,7 @@
 > 
 > *As GitHub do not support `.tga` image, you may need to download it to see the effect*
 
-This is the final project for Computer Graphics course, a tiny software renderer based on [tinyrenderer](https://github.com/ssloy/tinyrenderer/wiki).
+This is the final project for Computer Graphics course, a tiny C++ software renderer based on [tinyrenderer](https://github.com/ssloy/tinyrenderer/wiki).
 
 My goal is to create a tiny and flexible renderer core that does not rely on any third-party libraries,
 which can be a good practice for learning computer graphics.
@@ -56,7 +56,7 @@ They are the basic geometry and color classes, which are used to define the basi
 And it implements some basic vectors and matrices operations, such as `+`, `-`, `*`, `/` , etc. 
 and some useful functions, like `cross()`, `normalize()`, `invert()`, `transpose()`, etc.
 
-`color` defines the `Color` class, which is used to represent the color of the image, using `uint8_t` to store the color data.
+`color` defines the `Color` class, which is used to represent the color of the image, using 4 `uint8_t` to store the color data.
 
 - [texture.h](texture.h) & [model.h](model.h) 
 
@@ -72,7 +72,7 @@ And it provides `get_color(uv)` function to let other classes get the color of t
 It defines the `Renderer` class, which is the core of the program. 
 It contains the main rendering algorithms, such as line drawing, barycentric getting, triangle rasterization, etc.
 
-The image color data will be stored in a `vector<uint8_t>` named `frame_buffer`, which is a raw, low-level format. 
+The image color data will be stored in a `vector<uint8_t>` named `frame_buffer`, which is a raw, low-level format and I think it is flexible for further development.
 I use bpp(bit per pixel) as the offset to store pixel color and to index.
 
 - [shader.h](shader.h)
@@ -165,7 +165,9 @@ void Renderer::draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, const Color
 
 #### Rasterization
 
-Iterate through all pixels of a bounding box and check whether a point belongs a 2D triangle.
+This is the most common way to draw a triangle nowadays, which is efficient. Its core idea is to:
+
+> Iterate through all pixels of a bounding box and check whether a point belongs a 2D triangle.
 
 There are two ways to check whether a point belongs a 2D triangle.
 
@@ -287,7 +289,7 @@ void Renderer::draw_triangle(const Mat<3, 4> &t_vert_clip, IShader &shader) {
 
 The transformation matrix is used to transform the model from the model space to the screen space, here is the detail.
 
-Model Space -> World Space -> View Space -> Clip Space -> (NDC) -> Screen Space
+> Model Space -> World Space -> View Space -> Clip Space -> (NDC) -> Screen Space
 
 - Model Matrix (Model Space -> World Space)
 
@@ -455,7 +457,7 @@ bool fragment(const Vec3 &bc, Color &ret_color) override {
 
 - Phong Shading (with Normal Mapping)
 
-Normal mapping is a technique used for faking the lighting of bumps and dents.
+Normal mapping is a technique used for faking the lighting of bumps and dents. Here we calculate TBN matrix in runtime to transform the normal.
 
 ```c++
 bool fragment(const Vec3 &bc, Color &ret_color) override {
