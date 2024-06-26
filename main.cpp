@@ -150,15 +150,18 @@ int main(int argc, char** argv) {
             R"(..\model\african_head\african_head.obj)",
             R"(..\model\african_head\african_head_eye_inner.obj)",
 //            R"(..\model\diablo3_pose\diablo3_pose.obj)",
+//            R"(..\model\boggie\body.obj)",
+//            R"(..\model\boggie\eyes.obj)",
+//            R"(..\model\boggie\head.obj)",
     };
-    std::string output_filename = "../image/african_head_tangent_shader.tga";
+    std::string output_filename = "../image/boggie.tga";
 
     Renderer renderer(width, height, Color::RGB);
 
     for (const auto& model_path : model_paths)
     {
         Model model = Model(model_path);
-        Object object(model, {0.0, 0.0, 0.0}, -45, 3);
+        Object object(model, {0.0, 0.0, 0.0}, 0, 3);
         set_model_mat(object.angle, object.scale, object.position);
         set_view_mat(camera.position);
         set_projection_mat(camera.fov, camera.aspect_ratio, camera.zNear, camera.zFar);

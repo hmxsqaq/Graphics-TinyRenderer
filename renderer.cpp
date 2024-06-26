@@ -162,7 +162,7 @@ void Renderer::draw_triangle_linesweeping(Vec2 p0, Vec2 p1, Vec2 p2, const Color
 }
 
 void Renderer::draw_object(const Object &object, IShader &shader) {
-    set_viewport_mat(width_ / 8, height_ / 8, width_ * 3 / 4, height_ * 3 / 4);
+    set_viewport_mat(0, 0, width_, height_);
     shader.start();
     for (int i_face = 0; i_face < object.model.n_faces(); i_face++) {
         Mat<3, 4> t_vert_clip = {0};
