@@ -52,9 +52,9 @@ Model::Model(const std::string& filename) {
 }
 
 Texture Model::load_texture(const std::string& filename, const std::string& suffix) {
-    size_t dot = filename.find_last_of('.');
+    const size_t dot = filename.find_last_of('.');
     if (dot == std::string::npos) return {};
-    std::string texture_file_name = filename.substr(0, dot) + suffix;
+    const std::string texture_file_name = filename.substr(0, dot) + suffix;
     Texture texture = TGAHandler::read_tga_file(texture_file_name);
     if (texture.width <= 0 || texture.height <= 0) return {};
     return texture;
@@ -63,5 +63,5 @@ Texture Model::load_texture(const std::string& filename, const std::string& suff
 Vec3 Model::normal(const Vec2 &uvf) const {
     Color c = normal_map_.get_color(static_cast<int>(uvf[0] * normal_map_.width),
                                     static_cast<int>(uvf[1] * normal_map_.height));
-    return Vec3{(double)c[2], (double)c[1], (double)c[0]} * 2.0 / 255.0 - Vec3{1, 1, 1};
+    return Vec3{static_cast<double>(c[2]), static_cast<double>(c[1]), static_cast<double>(c[0])} * 2.0 / 255.0 - Vec3{1, 1, 1};
 }

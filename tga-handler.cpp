@@ -18,9 +18,9 @@ Texture TGAHandler::read_tga_file(const std::string &filename) {
     }
 
     // load width & height & bpp from header
-    auto width = header.width;
-    auto height = header.height;
-    auto bpp = header.bits_per_pixel >> 3; // /= 8
+    const auto width = header.width;
+    const auto height = header.height;
+    const auto bpp = header.bits_per_pixel >> 3; // /= 8
     if (width <= 0 || height <= 0 || (bpp != Color::GRAYSCALE &&
                                         bpp != Color::RGB &&
                                         bpp != Color::RGBA)) {
@@ -32,7 +32,7 @@ Texture TGAHandler::read_tga_file(const std::string &filename) {
 
     // read frame_data
     if (header.data_type_code == 3 || header.data_type_code == 2) {
-        in.read(reinterpret_cast<char *>(texture.data.data()), (long long)width * height * bpp);
+        in.read(reinterpret_cast<char *>(texture.data.data()), static_cast<long long>(width) * height * bpp);
         if (!in.good()) {
             std::cerr << "read - cannot read frame data\n";
             return {};
@@ -43,7 +43,7 @@ Texture TGAHandler::read_tga_file(const std::string &filename) {
             return {};
         }
     } else {
-        std::cerr << "read - unknown file format " << (int)header.data_type_code << "\n";
+        std::cerr << "read - unknown file format " << static_cast<int>(header.data_type_code) << "\n";
         return {};
     }
 
@@ -60,7 +60,7 @@ bool TGAHandler::write_tga_file(const std::string &filename,
                                 const int height,
                                 const std::uint8_t bpp,
                                 const unsigned char *data,
-                                bool v_flip, bool rle) {
+                                const bool v_flip, const bool rle) {
     constexpr std::uint8_t developer_area_ref[4] = {0, 0, 0, 0};
     constexpr std::uint8_t extension_area_ref[4] = {0, 0, 0, 0};
     constexpr std::uint8_t footer[18] = {'T','R','U','E','V','I','S','I','O','N','-','X','F','I','L','E','.','\0'};
@@ -73,14 +73,14 @@ bool TGAHandler::write_tga_file(const std::string &filename,
         return false;
     }
 
-    std::cout << "writing - width " << width << " height " << height << " bpp " << (int)bpp << "\n";
+    std::cout << "writing - width " << width << " height " << height << " bpp " << static_cast<int>(bpp) << "\n";
 
     // prepare header
     TGAHeader header = {};
     header.bits_per_pixel = bpp << 3; // = * 8
     header.width  = width;
     header.height = height;
-    header.data_type_code = (bpp == Color::GRAYSCALE ? (rle ? 11 : 3) : (rle ? 10 : 2));
+    header.data_type_code = bpp == Color::GRAYSCALE ? (rle ? 11 : 3) : rle ? 10 : 2;
     header.image_descriptor = v_flip ? 0x00 : 0x20; // top-left or bottom-left origin
 
     // write header
@@ -125,17 +125,16 @@ bool TGAHandler::write_tga_file(const std::string &filename,
 
 
 bool TGAHandler::load_rle_data(std::ifstream &in, Texture &texture) {
-    auto width = texture.width;
-    auto height = texture.height;
-    auto bpp = texture.bpp;
+    const auto width = texture.width;
+    const auto height = texture.height;
+    const auto bpp = texture.bpp;
 
-    size_t pixel_count = width * height;
+    const size_t pixel_count = width * height;
     size_t current_pixel = 0;
     size_t current_byte  = 0;
     Color color_buffer;
     do {
-        std::uint8_t chunk_header;
-        chunk_header = in.get();
+        std::uint8_t chunk_header = in.get();
         if (!in.good()) {
             std::cerr << "rle - an error occurred while reading the frame_data\n";
             return false;
@@ -184,18 +183,18 @@ bool TGAHandler::unload_rle_data(std::ofstream &out,
                                  const int height,
                                  const std::uint8_t bpp,
                                  const unsigned char *data) {
-    const std::uint8_t max_chunk_length = 128;
-    size_t n_pixels = width * height;
+    const size_t n_pixels = width * height;
     size_t current_pixel = 0;
     while (current_pixel < n_pixels) {
-        size_t chunk_start = current_pixel * bpp;
+        constexpr std::uint8_t max_chunk_length = 128;
+        const size_t chunk_start = current_pixel * bpp;
         size_t current_byte = current_pixel * bpp;
         std::uint8_t run_length = 1;
         bool raw = true;
         while (current_pixel + run_length < n_pixels && run_length < max_chunk_length) {
             bool is_equal = true;
             for (int t = 0; is_equal && t < bpp; t++)
-                is_equal = (data[current_byte + t] == data[current_byte + t + bpp]);
+                is_equal = data[current_byte + t] == data[current_byte + t + bpp];
             current_byte += bpp;
             if (run_length == 1)
                 raw = !is_equal;
@@ -213,7 +212,7 @@ bool TGAHandler::unload_rle_data(std::ofstream &out,
             std::cerr << "rle - can't dump the tga file\n";
             return false;
         }
-        out.write(reinterpret_cast<const char *>(data + chunk_start), (raw ? run_length * bpp : bpp));
+        out.write(reinterpret_cast<const char *>(data + chunk_start), raw ? run_length * bpp : bpp);
         if (!out.good()) {
             std::cerr << "rle - can't dump the tga file\n";
             return false;

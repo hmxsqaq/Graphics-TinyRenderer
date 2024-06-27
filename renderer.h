@@ -10,7 +10,7 @@
 #include "geometry.h"
 #include "shader.h"
 
-void set_model_mat(double angle, double scale, Vec3 translate);
+void set_model_mat(double angle, double scale, const Vec3 &translate);
 void set_view_mat(const Vec3& eye_point);
 void set_projection_mat(double fov, double aspect_ratio, double zNear, double zFar);
 void set_viewport_mat(int x, int y, int w, int h);
@@ -37,7 +37,7 @@ private:
     void draw_triangle(const Mat<3, 4> &t_vert_clip, IShader &shader);
 
     static Vec3 get_barycentric2D(const std::array<Vec2, 3> &t_vert, const Vec2& p);
-    static bool is_inside_triangle_cross_product(Vec2 *t, const Vec2& P);
+    static bool is_inside_triangle_cross_product(const Vec2 *t, const Vec2& P);
 
     int width_ = 0;
     int height_ = 0;

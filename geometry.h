@@ -14,7 +14,7 @@ struct Vec {
     constexpr double& operator[](const int i)       noexcept { assert(i>=0 && i < N); return data[i]; }
     constexpr double  operator[](const int i) const noexcept { assert(i>=0 && i < N); return data[i]; }
     constexpr double  norm2()                 const noexcept { return *this * *this; }
-    constexpr double  norm()                            const noexcept { return std::sqrt(norm2()); }
+    constexpr double  norm()                  const noexcept { return std::sqrt(norm2()); }
 };
 
 template<int N>
@@ -274,28 +274,5 @@ template<> struct Det<1> {
         return src[0][0];
     }
 };
-
-//struct Triangle {
-//    Mat<3, 4> vert{};
-//    Mat<3, 3> normal{};
-//    Mat<3, 2> tex_coords{};
-//    Mat<3, 3> color{};
-//    Mat<3, 3> view_pos{};
-//
-//    constexpr Vec4&        operator[](const int i)       noexcept { assert(i >= 0 && i < 3); return vert[i]; }
-//    constexpr const Vec4&  operator[](const int i) const noexcept { assert(i >= 0 && i < 3); return vert[i]; }
-//
-//    constexpr void set_color(int index, double r, double g, double b) noexcept {
-//        r = r < 0 ? 0 : r > 255 ? 255 : r;
-//        g = g < 0 ? 0 : g > 255 ? 255 : g;
-//        b = b < 0 ? 0 : b > 255 ? 255 : b;
-//        color[index] = {r / 255.0, g / 255.0, b / 255.0};
-//    }
-//};
-//
-//constexpr inline std::ostream& operator<<(std::ostream& out, const Triangle& t) noexcept {
-//    for (int i = 0; i < 3; i++) out << t[i] << "\n";
-//    return out;
-//}
 
 #endif //GRAPHICS_TINYRENDERER_GEOMETRY_H

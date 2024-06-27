@@ -14,10 +14,10 @@ struct Texture {
     std::vector<std::uint8_t> data = {};
 
     Texture() = default;
-    Texture(int _width, int _height, std::uint8_t _bpp)
+    Texture(const int _width, const int _height, const std::uint8_t _bpp)
         : width(_width), height(_height), bpp(_bpp), data(_width * _height * _bpp) {}
 
-    Color get_color(int x, int y) const {
+    Color get_color(const int x, const int y) const {
         if (data.empty() || x < 0 || y < 0 || x >= width || y >= height) {
             std::cerr << "get pixel fail: x " << x << " y " << y << "\n";
             return {};
@@ -30,11 +30,11 @@ struct Texture {
     }
 
     Color get_color(const Vec2& uv) const {
-        return get_color((int)(uv[0] * width), (int)(uv[1] * height));
+        return get_color(static_cast<int>(uv[0] * width), static_cast<int>(uv[1] * height));
     }
 
     void flip_horizontally() {
-        int half = width >> 1;
+        const int half = width >> 1;
         for (int x = 0; x < half; ++x)
             for (int y = 0; y < height; ++y)
                 for (int b = 0; b < bpp; ++b)
@@ -43,7 +43,7 @@ struct Texture {
     }
 
     void flip_vertically() {
-        int half = height >> 1;
+        const int half = height >> 1;
         for (int x = 0; x < width; ++x)
             for (int y = 0; y < half; ++y)
                 for (int b = 0; b < bpp; ++b)

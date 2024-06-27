@@ -17,10 +17,13 @@ struct Camera {
 };
 
 struct Object {
-    const Model& model;
-    Vec3 position = {0, 0, 10};
-    double angle = 0.0;
-    double scale = 1.0;
+    const Model model;
+    Vec3 position;
+    double angle;
+    double scale;
+
+    Object(const std::string &model_path, const Vec3 &position, const double angle, const double scale)
+            : model(Model(model_path)), position(position), angle(angle), scale(scale) {}
 };
 
 struct Light {
@@ -29,6 +32,8 @@ struct Light {
 };
 
 struct IShader {
+    virtual ~IShader() = default;
+
     explicit IShader(const Model &model, std::vector<Light>&& lights = std::vector<Light>())
         : model_(model), lights_(std::move(lights)) {
     }

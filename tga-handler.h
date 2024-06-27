@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <fstream>
-#include <vector>
 #include "texture.h"
 
 // standard TGA header
