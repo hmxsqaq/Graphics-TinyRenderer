@@ -6,9 +6,9 @@
 > 
 > *As GitHub do not support `.tga` image, you may need to download it to see the effect*
 
-This is the final project for Computer Graphics course, a tiny C++ software renderer based on [tinyrenderer](https://github.com/ssloy/tinyrenderer/wiki).
+This is the final project for course "Computer Graphics", a tiny C++ software renderer based on [tinyrenderer](https://github.com/ssloy/tinyrenderer/wiki).
 
-My goal is to create a tiny and flexible renderer core that does not rely on any third-party libraries,
+The main idea is to create a tiny and flexible renderer core that does not rely on any third-party libraries,
 which can be a good practice for learning computer graphics.
 
 ![sample](doc/sample.png)
@@ -34,6 +34,8 @@ which can be a good practice for learning computer graphics.
 ## Architecture
 
 ![class_diagram.png](doc/class_diagram.png)
+
+Above is the class diagram of this project, which is well-organized and easy to understand.
 
 - [main.cpp](main.cpp)
 
