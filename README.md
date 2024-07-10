@@ -86,6 +86,10 @@ It also defines the basic `IShader` interface, which serves as the base class fo
 
 It is a static TGA image reader and writer, which can read and write TGA images with RLE compression.
 
+Run-Length Encoding (RLE) is a simple and efficient data compression algorithm that is particularly effective for compressing data with lots of repetitive elements. The basic idea of RLE is to replace consecutive occurrences of the same data value with a single value and a count.
+
+For example, consider the string "AAAABBBCCDAA". Using RLE, this string can be compressed to "4A3B2C1D2A". Here, "4A" means the letter 'A' appears four times consecutively, "3B" means 'B' appears three times, and so on.
+
 ## Implementation
 
 ### Line Drawing
